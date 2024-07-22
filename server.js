@@ -7,6 +7,8 @@ import sequelize from './db/sequalize.js';
 import createTables from './db/createTables.js';
 import userRoutes from './routes/userRoutes.js';
 import donationRoutes from './routes/donationRoutes.js';
+import enquiryRoutes from './routes/enquiry.js';
+import subDonationRoutes from './routes/subDonationRoutes.js';
 import { fileURLToPath } from 'url';
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -20,6 +22,8 @@ app.use('/images', express.static(path.join(__dirname, 'images')));
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/donation_campaign', donationRoutes);
+app.use('/api/enquiry', enquiryRoutes);
+app.use('/api/subDonation', subDonationRoutes);
 
 // Database Connection
 sequelize.authenticate()

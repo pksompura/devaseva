@@ -3,7 +3,7 @@ import path from 'path';
 import sequelize from '../db/sequalize.js'; // Make sure to import sequelize instance
 import DonationCampaign from '../models/donationCampaign.js';
 import CampaignImage from '../models/donationCampaignImage.js';
-import Subdonation from '../models/Subdonation.js';
+import Subdonation from '../models/subdonation.js';
 // Create a new donation campaign
 
 export const getDonationCampaignById = async (req, res) => {
@@ -96,13 +96,20 @@ export const listDonationCampaigns = async (req, res) => {
     const { count, rows } = await DonationCampaign.findAndCountAll({
       limit: perPage,
       offset: (page - 1) * perPage,
-      
     });
 
-    const totalPages = Math.ceil(count / perPage);  
+    const totalPages = Math.ceil(count / perPage);
+
+    // Modify the featured_image_base_url to include the server URL
+    const campaigns = rows.map(campaign => {
+      return {
+        ...campaign.dataValues,
+        featured_image_base_url: `${req.protocol}://${req.get('host')}/${campaign.featured_image_base_url}`,
+      };
+    });
 
     res.status(200).json({
-      campaigns: rows,
+      campaigns: campaigns,
       currentPage: page,
       totalPages: totalPages,
       totalItems: count,

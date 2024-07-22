@@ -1,4 +1,4 @@
-import Subdonation from '../models/Subdonation.js';
+import Subdonation from '../models/subdonation.js';
 import DonationCampaign from '../models/donationCampaign.js';
 
 export const createSubdonation = async (req, res) => {
@@ -15,7 +15,7 @@ export const createSubdonation = async (req, res) => {
       featured_image,
       amount,
       description,
-      campaign_slug: campaign.slug,
+      campaign_slug: campaign.slug
     });
 
     res.status(201).json(subdonation);
