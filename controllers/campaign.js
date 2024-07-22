@@ -1,11 +1,37 @@
 import fs from 'fs';
 import path from 'path';
 import sequelize from '../db/sequalize.js'; // Make sure to import sequelize instance
-import DonationCampaign from '../models/DonationCampaign.js';
+import DonationCampaign from '../models/donationCampaign.js';
 import CampaignImage from '../models/donationCampaignImage.js';
+import Subdonation from '../models/Subdonation.js';
 // Create a new donation campaign
 
+export const getDonationCampaignById = async (req, res) => {
+  try {
+    const { id } = req.params;
 
+    // Fetch the campaign by ID
+    const campaign = await DonationCampaign.findByPk(id);
+
+    if (!campaign) {
+      return res.status(404).json({ status: false, message: 'Donation campaign not found', data: null });
+    }
+
+    // Fetch associated subdonations
+    const subdonations = await Subdonation.findAll({ where: { campaign_id: id } });
+    campaign.featured_image_base_url = `${req.protocol}://${req.get('host')}/${campaign.featured_image_base_url}`;
+    res.status(200).json({
+      status: true,
+      message: 'Campaign fetched successfully',
+      data: {
+        campaign,
+        subdonations,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({ status: false, message: error.message, data: null });
+  }
+};
 const ensureDirectoryExists = (directoryPath) => {
     if (!fs.existsSync(directoryPath)) {
       fs.mkdirSync(directoryPath, { recursive: true });
@@ -89,18 +115,18 @@ export const listDonationCampaigns = async (req, res) => {
 
 
 // Get a single donation campaign by ID
-export const getDonationCampaignById = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const campaign = await DonationCampaign.findByPk(id);
-    if (!campaign) {
-      return res.status(404).json({ error: 'Donation campaign not found' });
-    }
-    res.status(200).json(campaign);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
+// export const getDonationCampaignById = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const campaign = await DonationCampaign.findByPk(id);
+//     if (!campaign) {
+//       return res.status(404).json({ error: 'Donation campaign not found' });
+//     }
+//     res.status(200).json(campaign);
+//   } catch (error) {
+//     res.status(400).json({ error: error.message });
+//   }
+// };
 
 // Update a donation campaign
 // export const updateDonationCampaign = async (req, res) => {

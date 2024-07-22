@@ -1,6 +1,6 @@
 import { DataTypes, Model } from 'sequelize';
 import sequelize from '../db/sequalize.js';
- 
+
 class Subdonation extends Model {}
 
 Subdonation.init({
@@ -18,15 +18,19 @@ Subdonation.init({
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
   },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
   created_date: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
   },
-  campaign_slug: {
-    type: DataTypes.STRING,
+  campaign_id: {
+    type: DataTypes.INTEGER,
     references: {
-      model: 'donationCampaign',
-      key: 'slug',
+      model: 'donationCampaign', // should match the name of the DonationCampaign table
+      key: 'id',
     },
   },
 }, {

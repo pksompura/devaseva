@@ -60,10 +60,12 @@ DonationCampaign.init({
 });
 
 DonationCampaign.associate = models => {
-  DonationCampaign.hasMany(models.Subdonation, { foreignKey: 'campaign_slug', sourceKey: 'slug' });
+  DonationCampaign.hasMany(models.Subdonation, { foreignKey: 'campaign_id', as: 'subdonations' });
 DonationCampaign.hasMany(models.Donation, { foreignKey: 'donation_campaign_id' });
 DonationCampaign.hasMany(CampaignImage, { foreignKey: 'donationCampaignId', as: 'images' });
 
 };
+
+
 
 export default DonationCampaign;

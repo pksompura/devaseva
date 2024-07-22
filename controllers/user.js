@@ -37,8 +37,6 @@ export const sendOTP = async (req, res) => {
 
   try {
     const otp = generateOTP();
-
-    // Find or create the user with the given mobile number
     let user = await User.findOne({ where: { mobile_number } });
     if (user) {
       user.otp = otp;
@@ -88,3 +86,12 @@ export const verifyOTP = async (req, res) => {
 };
 
 
+export const listUsers = async (req, res) => {
+  try {
+    const users = await User.findAll(); // Use your ORM method to fetch users
+    res.status(200).json(users);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};

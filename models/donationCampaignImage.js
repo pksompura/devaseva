@@ -1,7 +1,8 @@
 // src/models/CampaignImage.js
 import { DataTypes, Model } from 'sequelize';
 import sequelize from '../db/sequalize.js';
-import DonationCampaign from './DonationCampaign.js';
+import DonationCampaign from './donationCampaign.js';
+ 
 class CampaignImage extends Model {}
 
 CampaignImage.init({
@@ -31,6 +32,6 @@ CampaignImage.init({
   timestamps: false,
 });
 
-CampaignImage.belongsTo(DonationCampaign, { foreignKey: 'donationCampaignId', as: 'campaign' });
+// CampaignImage.belongsTo(DonationCampaign, { foreignKey: 'donationCampaignId', as: 'campaign' });
 
 export default CampaignImage;
