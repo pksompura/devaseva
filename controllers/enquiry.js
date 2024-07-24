@@ -76,3 +76,36 @@ export const deleteEnquiry = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+
+export const getEnquiries = async (req, res) => {
+  const { page = 1, limit = 10, name, email, number, purpose, trust } = req.query;
+
+  const offset = (page - 1) * limit;
+
+  let where = {};
+
+  if (name) where.name = { [Op.like]: `%${name}%` };
+  if (email) where.email = { [Op.like]: `%${email}%` };
+  if (number) where.number = { [Op.like]: `%${number}%` };
+  if (purpose) where.purpose = { [Op.like]: `%${purpose}%` };
+  if (trust) where.trust = { [Op.like]: `%${trust}%` };
+
+  try {
+    const enquiries = await Enquiry.findAndCountAll({
+      where,
+      limit: parseInt(limit),
+      offset
+    });
+
+    res.status(200).json({
+      total: enquiries.count,
+      pages: Math.ceil(enquiries.count / limit),
+      currentPage: parseInt(page),
+      enquiries: enquiries.rows,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
