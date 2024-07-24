@@ -29,6 +29,19 @@ Donation.init({
   //   allowNull: false,
   //   unique: true,
   // },
+  // user_id: {
+  //   type: DataTypes.INTEGER,
+  //   references: {
+  //     model: 'users',
+  //     key: 'id',
+  //   },
+  //   allowNull: false,
+  // },
+  // paid: {
+  //   type: DataTypes.BOOLEAN,
+  //   defaultValue: false,
+  //   allowNull: false,
+  // },
 }, {
   sequelize,
   modelName: 'Donation',

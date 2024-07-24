@@ -1,3 +1,4 @@
+import { Op } from "sequelize";
 import Enquiry from "../models/enquiry.js";
 
 // Create a new enquiry
@@ -9,13 +10,25 @@ export const createEnquiry = async (req, res) => {
   }
 
   try {
+    // Check if email or number already exists
+    const existingEnquiry = await Enquiry.findOne({
+      where: {
+        [Op.or]: [{ email }, { number }],
+      },
+    });
+
+    if (existingEnquiry) {
+      return res.status(400).json({ error: 'Email or Mobile number already exists' });
+    }
+
     const enquiry = await Enquiry.create({ name, email, number, purpose, trust });
-    res.status(201).json(enquiry);
+    res.status(201).json({ status: true, message: "Campaign Added Successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 
 // Update an existing enquiry
 export const updateEnquiry = async (req, res) => {

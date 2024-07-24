@@ -16,6 +16,7 @@ Enquiry.init({
   email: {
     type: DataTypes.STRING,
     allowNull: false,
+    unique:true,
     validate: {
       isEmail: true,
     },
@@ -23,6 +24,7 @@ Enquiry.init({
   number: {
     type: DataTypes.STRING,
     allowNull: false,
+    unique:true,
     validate: {
       isNumeric: true,
       len: [10, 15], // Assuming phone number length between 10 to 15 digits

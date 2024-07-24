@@ -69,3 +69,22 @@ export const updateSubdonation = async (req, res) => {
     }
   };
   
+
+  export const getSubdonationsByCampaign = async (req, res) => {
+    try {
+      const { campaign_id } = req.params;
+  
+      const campaign = await DonationCampaign.findByPk(campaign_id);
+      if (!campaign) {
+        return res.status(404).json({ error: 'Donation campaign not found' });
+      }
+  
+      const subdonations = await Subdonation.findAll({
+        where: { campaign_id: campaign.id },
+      });
+  
+      res.json(subdonations);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  };

@@ -4,14 +4,9 @@ import { createEnquiry, updateEnquiry, deleteEnquiry } from '../controllers/enqu
 
 const router = express.Router();
 
-// Route to create a new enquiry
-router.post('/enquiries', createEnquiry);
-
-// Route to update an existing enquiry
-router.put('/enquiries/:id', updateEnquiry);
-
-// Route to delete an enquiry
-router.delete('/enquiries/:id', deleteEnquiry);
+router.post('/create', createEnquiry);
+router.put('/update/:id', updateEnquiry);
+router.delete('/delete/:id', deleteEnquiry);
 
 
 
