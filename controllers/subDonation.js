@@ -1,7 +1,35 @@
 import Subdonation from '../models/subdonation.js';
 import DonationCampaign from '../models/donationCampaign.js';
 
+import fs from "fs"
+import path from "path"
+import sequelize from '../db/sequalize.js';
+
+const saveBase64Image = (base64Image, campaignId, imageIndex) => {
+  const matches = base64Image.match(/^data:(.+);base64,(.+)$/);
+  if (!matches || matches.length !== 3) {
+    throw new Error('Invalid base64 string');
+  }
+
+  const extension = matches[1].split('/')[1];
+  const imageData = matches[2];
+  const imagePath = `images/campaign_${campaignId}_${imageIndex}.${extension}`;
+  const imageBuffer = Buffer.from(imageData, 'base64');
+
+  ensureDirectoryExists(path.resolve('images'));
+
+  fs.writeFileSync(path.resolve('images', `campaign_${campaignId}_${imageIndex}.${extension}`), imageBuffer);
+
+  return imagePath;
+};
+const ensureDirectoryExists = (dirPath) => {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+};
+
 export const createSubdonation = async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const { name, featured_image, amount, description, campaign_id } = req.body;
 
@@ -10,19 +38,24 @@ export const createSubdonation = async (req, res) => {
       return res.status(404).json({ error: 'Donation campaign not found' });
     }
 
+    const path = saveBase64Image(featured_image, campaign_id, Math.floor(Math.random() * 10));
+
     const subdonation = await Subdonation.create({
       name,
-      featured_image,
+      featured_image: path,
       amount,
       description,
-      campaign_slug: campaign.slug
-    });
+      campaign_id,
+    }, { transaction: t });
 
+    await t.commit();
     res.status(201).json(subdonation);
   } catch (error) {
+    await t.rollback();
     res.status(500).json({ error: error.message });
   }
 };
+
 
 
 export const updateSubdonation = async (req, res) => {
