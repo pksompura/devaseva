@@ -19,19 +19,31 @@ export const getDonationCampaignById = async (req, res) => {
 
     // Fetch associated subdonations
     const subdonations = await Subdonation.findAll({ where: { campaign_id: id } });
+
+    // Update campaign featured image URL
     campaign.featured_image_base_url = `${req.protocol}://${req.get('host')}/${campaign.featured_image_base_url}`;
+
+    // Update subdonations featured image URLs
+    const updatedSubdonations = subdonations.map((data) => {
+      return {
+        ...data.get(),
+        featured_image: `${req.protocol}://${req.get('host')}/${data.featured_image}`,
+      };
+    });
+
     res.status(200).json({
       status: true,
       message: 'Campaign fetched successfully',
       data: {
         campaign,
-        subdonations,
+        subdonations: updatedSubdonations,
       },
     });
   } catch (error) {
     res.status(400).json({ status: false, message: error.message, data: null });
   }
 };
+
 const ensureDirectoryExists = (directoryPath) => {
     if (!fs.existsSync(directoryPath)) {
       fs.mkdirSync(directoryPath, { recursive: true });
@@ -193,18 +205,19 @@ export const updateDonationCampaign = async (req, res) => {
   const t = await sequelize.transaction();
   try {
     const {
-      //  images,
        featured_image_base_url, ...data } = req.body;
-    const { id } = req.params;
-console.log(id)
+    const { id } = req.body;
+
     const campaign = await DonationCampaign.findByPk(id);
+
     if (!campaign) {
       return res.status(404).json({ error: 'Campaign not found' });
     }
-
+    
     await campaign.update(data, { transaction: t });
+    const base64Regex = /^data:image\/[a-zA-Z]+;base64,/;
 
-    if (featured_image_base_url) {
+    if (featured_image_base_url&& base64Regex.test(featured_image_base_url)) {
       const oldImagePath = campaign.featured_image_base_url;
       const newImagePath = saveBase64Image(featured_image_base_url, id, 'featured');
       await campaign.update({ featured_image_base_url: newImagePath }, { transaction: t });
