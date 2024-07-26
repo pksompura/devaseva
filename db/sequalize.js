@@ -1,42 +1,25 @@
-// import { Sequelize } from 'sequelize';
-// import dotenv from 'dotenv';
-
-// dotenv.config();
-
-// const sequelize = new Sequelize({
-//   dialect: 'postgres',
-//   host: process.env.DB_HOST || 'localhost',
-//   port: process.env.DB_PORT || 5432,
-//   username: process.env.DB_USER || 'postgres',
-//   password: process.env.DB_PASSWORD || 'Chandu@88611',
-//   database: process.env.DB_DATABASE || 'donation',
-//   dialectOptions: {
-//     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-//   },
-// });
-
-// export default sequelize;
-
 // db/sequelize.js
 import { Sequelize } from 'sequelize';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
+const databaseUrl = process.env.DATABASE_URL || 'postgresql://temple_postgress_user:IPD10NINu3ZgDFOSjvmedLt3HLD0xRVe@dpg-cqhnilqju9rs738obeu0-a.singapore-postgres.render.com/temple_postgress';
+
 let sequelize;
 
 if (!sequelize) {
-  sequelize = new Sequelize({
+  console.log('Connecting to database:', databaseUrl); // Debug log for verifying the URL
+
+  sequelize = new Sequelize(databaseUrl, {
     dialect: 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
-    username: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'Chandu@88611',
-    database: process.env.DB_DATABASE || 'donation',
     dialectOptions: {
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      ssl: {
+        require: true,
+        rejectUnauthorized: false, // Render's PostgreSQL usually requires SSL
+      }
     },
-    logging: console.log, // Enable logging to debug connection issues
+    logging: console.log,  
   });
 }
 

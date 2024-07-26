@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.post('/create', createSubdonation);
 router.post('/update/:id', updateSubdonation);
-router.post('/delete/:id', deleteSubdonation);
+router.post('/delete/:id', deleteSubdonation);63
 
 
 export default router
