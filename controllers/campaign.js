@@ -219,14 +219,15 @@ export const updateDonationCampaign = async (req, res) => {
 
     if (featured_image_base_url&& base64Regex.test(featured_image_base_url)) {
       const oldImagePath = campaign.featured_image_base_url;
-      const newImagePath = saveBase64Image(featured_image_base_url, id, 'featured');
-      await campaign.update({ featured_image_base_url: newImagePath }, { transaction: t });
-
+      
       if (oldImagePath) {
         if (fs.existsSync(oldImagePath)) {
           fs.unlinkSync(oldImagePath);
         }// Delete old featured image
       }
+      const newImagePath = saveBase64Image(featured_image_base_url, id, 'featured');
+      await campaign.update({ featured_image_base_url: newImagePath }, { transaction: t });
+
     }
 
     // if (images && images.length > 0) {
