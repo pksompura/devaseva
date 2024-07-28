@@ -76,9 +76,9 @@ export const updateSubdonation = async (req, res) => {
       if (featured_image&& base64Regex.test(featured_image)) {
       
         const newImagePath = saveBase64Image(featured_image, id, 'featured');
-
+     
   
-      
+      console.log(newImagePath)
 
         subdonation.name = name;
         subdonation.featured_image = newImagePath;
@@ -86,6 +86,8 @@ export const updateSubdonation = async (req, res) => {
         subdonation.description = description;
         subdonation.campaign_slug = campaign.slug;
       }else{
+      console.log(name)
+
         subdonation.name = name;
       subdonation.featured_image = featured_image;
       subdonation.amount = amount;
