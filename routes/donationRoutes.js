@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.post('/add', createDonationCampaign);
 router.get('/list', listDonationCampaigns);
-router.post('/update:id', updateDonationCampaign);
+router.post('/update/:id', updateDonationCampaign);
 router.post('/delete/:id', deleteDonationCampaign);
 router.get('/get-by-id/:id', getDonationCampaignById);
 
