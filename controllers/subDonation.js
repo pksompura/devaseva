@@ -72,12 +72,28 @@ export const updateSubdonation = async (req, res) => {
       if (!campaign) {
         return res.status(404).json({ error: 'Donation campaign not found' });
       }
+      const base64Regex = /^data:image\/[a-zA-Z]+;base64,/;
+      if (featured_image&& base64Regex.test(featured_image)) {
+      
+        const newImagePath = saveBase64Image(featured_image, id, 'featured');
+
   
-      subdonation.name = name;
+      
+
+        subdonation.name = name;
+        subdonation.featured_image = newImagePath;
+        subdonation.amount = amount;
+        subdonation.description = description;
+        subdonation.campaign_slug = campaign.slug;
+      }else{
+        subdonation.name = name;
       subdonation.featured_image = featured_image;
       subdonation.amount = amount;
       subdonation.description = description;
       subdonation.campaign_slug = campaign.slug;
+      }
+
+     
   
       await subdonation.save();
       res.json(subdonation);
@@ -86,7 +102,7 @@ export const updateSubdonation = async (req, res) => {
     }
   };
   
-  export const deleteSubdonation = async (req, res) => {
+export const deleteSubdonation = async (req, res) => {
     try {
       const { id } = req.params;
   
