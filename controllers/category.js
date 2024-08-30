@@ -1,4 +1,4 @@
-import DonationCategory from "../models/DonationCategory.js";
+import DonationCategory from "../models/donationCategory.js";
 
 // Create a new donation category
 export const createDonationCategory = async (req, res) => {
