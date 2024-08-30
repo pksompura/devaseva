@@ -2,6 +2,8 @@
 import { DataTypes, Model } from 'sequelize';
 import sequelize from '../db/sequalize.js';
 import CampaignImage from './donationCampaignImage.js';
+import DonationCategory from './donationCategory.js';
+
 
 class DonationCampaign extends Model {}
 
@@ -51,21 +53,29 @@ DonationCampaign.init({
   is_whatsapp_update: DataTypes.BOOLEAN,
   minimum_amount: DataTypes.DECIMAL(10, 2),
   banner_image_id: DataTypes.INTEGER,
-  trust: DataTypes.STRING, // Added field
+  trust: DataTypes.STRING,
+  category_id: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: DonationCategory,
+      key: 'id',
+    },
+    allowNull: true,
+  }, // Added field
 }, {
   sequelize,
   modelName: 'DonationCampaign',
   tableName: 'donationCampaign',
-  timestamps: false, // Disable timestamps as createdAt and updatedAt are defined explicitly
+  timestamps: false,
 });
 
 DonationCampaign.associate = models => {
   DonationCampaign.hasMany(models.Subdonation, { foreignKey: 'campaign_id', as: 'subdonations' });
-DonationCampaign.hasMany(models.Donation, { foreignKey: 'donation_campaign_id' });
-DonationCampaign.hasMany(CampaignImage, { foreignKey: 'donationCampaignId', as: 'images' });
-
+  DonationCampaign.hasMany(models.Donation, { foreignKey: 'donation_campaign_id' });
+  DonationCampaign.hasMany(CampaignImage, { foreignKey: 'donationCampaignId', as: 'images' });
+  
+  // Association with DonationCategory
+  DonationCampaign.belongsTo(models.DonationCategory, { foreignKey: 'category_id', as: 'donationcategories' });
 };
-
-
 
 export default DonationCampaign;

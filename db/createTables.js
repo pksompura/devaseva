@@ -1,6 +1,7 @@
 import Donation from '../models/donation.js';
 import DonationCampaign from '../models/donationCampaign.js';
 import CampaignImage from '../models/donationCampaignImage.js';
+import DonationCategory from '../models/donationCategory.js';
 import Enquiry from '../models/enquiry.js';
 import Subdonation from '../models/subdonation.js';
 import User from '../models/users.js';
@@ -10,7 +11,8 @@ import sequelize from './sequalize.js';
 async function createTables() {
 
 
-    try {
+  try {
+      await DonationCategory.sync();
       await DonationCampaign.sync();
       await Subdonation.sync();
       await Donation.sync();

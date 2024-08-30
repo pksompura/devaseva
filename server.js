@@ -9,6 +9,7 @@ import userRoutes from './routes/userRoutes.js';
 import donationRoutes from './routes/donationRoutes.js';
 import enquiryRoutes from './routes/enquiry.js';
 import subDonationRoutes from './routes/subDonationRoutes.js';
+import categoryRoutes from "./routes/category.js"
 import { fileURLToPath } from 'url';
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -24,6 +25,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/donation_campaign', donationRoutes);
 app.use('/api/enquiry', enquiryRoutes);
 app.use('/api/subDonation', subDonationRoutes);
+app.use('/api/category', categoryRoutes);
 
 // Database Connection
 sequelize.authenticate()
