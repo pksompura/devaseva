@@ -1,7 +1,6 @@
-// src/server.js
 import express from 'express';
 import bodyParser from 'body-parser';
-import path from "path"
+import path from "path";
 import cors from 'cors';
 import sequelize from './db/sequalize.js';
 import createTables from './db/createTables.js';
@@ -9,17 +8,39 @@ import userRoutes from './routes/userRoutes.js';
 import donationRoutes from './routes/donationRoutes.js';
 import enquiryRoutes from './routes/enquiry.js';
 import subDonationRoutes from './routes/subDonationRoutes.js';
-import categoryRoutes from "./routes/category.js"
+import categoryRoutes from "./routes/category.js";
 import { fileURLToPath } from 'url';
+
 const app = express();
 const PORT = process.env.PORT || 5001;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// CORS configuration
+const allowedOrigins = [
+  'https://giveaze.com',
+  'https://admin.giveaze.com',
+  'http://localhost:5173',
+  'http://localhost:5174'
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true, // Allow cookies to be sent with requests
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/images', express.static(path.join(__dirname, 'images')));
+
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/donation_campaign', donationRoutes);
