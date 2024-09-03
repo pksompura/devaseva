@@ -2,15 +2,18 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import path from "path";
 import cors from 'cors';
-import sequelize from './db/sequalize.js';
-import createTables from './db/createTables.js';
+// import sequelize from './db/sequalize.js';
+// import createTables from './db/createTables.js';
 import userRoutes from './routes/userRoutes.js';
 import donationRoutes from './routes/donationRoutes.js';
 import enquiryRoutes from './routes/enquiry.js';
 import subDonationRoutes from './routes/subDonationRoutes.js';
 import categoryRoutes from "./routes/category.js";
 import { fileURLToPath } from 'url';
+import connectDB from './db/db.js';
 
+
+connectDB()
 const app = express();
 const PORT = process.env.PORT || 5001;
 const __filename = fileURLToPath(import.meta.url);
@@ -49,17 +52,17 @@ app.use('/api/subDonation', subDonationRoutes);
 app.use('/api/category', categoryRoutes);
 
 // Database Connection
-sequelize.authenticate()
-  .then(() => {
-    console.log('PostgreSQL database connected');
-    return createTables(); 
-  })
-  .then(() => {
-    console.log('Tables created successfully');
-  })
-  .catch(err => {
-    console.error('Unable to connect to the database or create tables:', err);
-  });
+// sequelize.authenticate()
+//   .then(() => {
+//     console.log('PostgreSQL database connected');
+//     return createTables(); 
+//   })
+//   .then(() => {
+//     console.log('Tables created successfully');
+//   })
+//   .catch(err => {
+//     console.error('Unable to connect to the database or create tables:', err);
+//   });
 
 // Start server
 app.listen(PORT, () => {

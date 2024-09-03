@@ -1,43 +1,69 @@
-import { DataTypes, Model } from 'sequelize';
-import sequelize from '../db/sequalize.js';
+// import { DataTypes, Model } from 'sequelize';
+// import sequelize from '../db/sequalize.js';
 
-class Subdonation extends Model {}
+// class Subdonation extends Model {}
 
-Subdonation.init({
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-  },
+// Subdonation.init({
+//   id: {
+//     type: DataTypes.INTEGER,
+//     autoIncrement: true,
+//     primaryKey: true,
+//   },
+//   name: {
+//     type: DataTypes.STRING,
+//     allowNull: false,
+//   },
+//   featured_image: DataTypes.STRING,
+//   amount: {
+//     type: DataTypes.DECIMAL(10, 2),
+//     allowNull: false,
+//   },
+//   description: {
+//     type: DataTypes.TEXT,
+//     allowNull: true,
+//   },
+//   created_date: {
+//     type: DataTypes.DATE,
+//     defaultValue: DataTypes.NOW,
+//   },
+//   campaign_id: {
+//     type: DataTypes.INTEGER,
+//     references: {
+//       model: 'donationCampaign', // should match the name of the DonationCampaign table
+//       key: 'id',
+//     },
+//   },
+// }, {
+//   sequelize,
+//   modelName: 'Subdonation',
+//   tableName: 'subdonations',
+//   timestamps: false,
+// });
+
+// export default Subdonation;
+import mongoose from 'mongoose';
+
+const subdonationSchema = new mongoose.Schema({
   name: {
-    type: DataTypes.STRING,
-    allowNull: false,
+    type: String,
+    required: true,
   },
-  featured_image: DataTypes.STRING,
+  featured_image: String,
   amount: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: false,
+    type: mongoose.Types.Decimal128,
+    required: true,
   },
-  description: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
+  description: String,
   created_date: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
+    type: Date,
+    default: Date.now,
   },
   campaign_id: {
-    type: DataTypes.INTEGER,
-    references: {
-      model: 'donationCampaign', // should match the name of the DonationCampaign table
-      key: 'id',
-    },
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'DonationCampaign',
   },
-}, {
-  sequelize,
-  modelName: 'Subdonation',
-  tableName: 'subdonations',
-  timestamps: false,
 });
+
+const Subdonation = mongoose.model('Subdonation', subdonationSchema);
 
 export default Subdonation;
