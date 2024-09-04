@@ -64,6 +64,6 @@ const subdonationSchema = new mongoose.Schema({
   },
 });
 
-const Subdonation = mongoose.model('Subdonation', subdonationSchema);
+const Subdonation = mongoose.model('Subdonations', subdonationSchema);
 
 export default Subdonation;
