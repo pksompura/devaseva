@@ -33,7 +33,10 @@ const donationCampaignSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
- 
+  // slug: {
+  //   type: String,
+  //   unique: true,
+  // },
   row_pre_id: String,
   is_anonymous: Boolean,
   is_whatsapp_update: Boolean,

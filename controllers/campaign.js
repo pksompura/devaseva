@@ -364,24 +364,29 @@ export const listDonationCampaigns = async (req, res) => {
 export const deleteDonationCampaign = async (req, res) => {
   try {
     const { id } = req.params;
+
     const campaign = await DonationCampaign.findById(id);
     
     if (!campaign) {
       return res.status(404).json({ error: 'Donation campaign not found' });
     }
-    
+
+    // Check if the featured image exists and delete it
     const { featured_image_base_url } = campaign;
     
     if (featured_image_base_url && fs.existsSync(featured_image_base_url)) {
       fs.unlinkSync(featured_image_base_url);
     }
 
-    await campaign.remove();
+    // Delete the campaign
+    await DonationCampaign.findByIdAndDelete(id);
+
     res.status(200).json({ status: true, message: 'Donation campaign deleted successfully' });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
+
 
 export const updateDonationCampaign = async (req, res) => {
   try {
