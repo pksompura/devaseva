@@ -131,7 +131,7 @@
 //       }
   
 //       const subdonations = await Subdonation.findAll({
-//         where: { campaign_id: campaign.id },
+//         where: { campaign_id: campaign._id },
 //       });
   
 //       res.json(subdonations);
@@ -257,7 +257,7 @@ export const getSubdonationsByCampaign = async (req, res) => {
       return res.status(404).json({ error: 'Donation campaign not found' });
     }
 
-    const subdonations = await Subdonation.find({ campaign_id: campaign.id });
+    const subdonations = await Subdonation.find({ campaign_id: campaign._id });
 
     res.json(subdonations);
   } catch (error) {

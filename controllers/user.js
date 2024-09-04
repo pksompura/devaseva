@@ -78,7 +78,7 @@
 //     await user.save();
 
 //     // Create a JWT token
-//     const token = jwt.sign({ id: user.id, mobile_number: user.mobile_number }, "JWT_SECRET", {
+//     const token = jwt.sign({ id: user._id, mobile_number: user.mobile_number }, "JWT_SECRET", {
 //       expiresIn: '1h', // Token expires in 1 hour
 //     });
 

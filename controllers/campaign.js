@@ -79,10 +79,10 @@
 //  data.featured_image_base_url=path
 //  const campaign = await DonationCampaign.create(data, { transaction: t });
 //     // const imagePaths = images.map((image, index) => {
-//     //   const imagePath = saveBase64Image(image, campaign.id, index);
+//     //   const imagePath = saveBase64Image(image, campaign._id, index);
 //     //   return {
 //     //     imageUrl: imagePath,
-//     //     donationCampaignId: campaign.id,
+//     //     donationCampaignId: campaign._id,
 //     //   };
 //     // });
 
