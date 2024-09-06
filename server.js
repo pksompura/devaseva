@@ -1,19 +1,16 @@
 import express from 'express';
 import bodyParser from 'body-parser';
-import path from "path";
+import path from 'path';
 import cors from 'cors';
-// import sequelize from './db/sequalize.js';
-// import createTables from './db/createTables.js';
+import { fileURLToPath } from 'url';
+import connectDB from './db/db.js';
 import userRoutes from './routes/userRoutes.js';
 import donationRoutes from './routes/donationRoutes.js';
 import enquiryRoutes from './routes/enquiry.js';
 import subDonationRoutes from './routes/subDonationRoutes.js';
-import categoryRoutes from "./routes/category.js";
-import { fileURLToPath } from 'url';
-import connectDB from './db/db.js';
+import categoryRoutes from './routes/category.js';
 
-
-connectDB()
+connectDB();
 const app = express();
 const PORT = process.env.PORT || 5001;
 const __filename = fileURLToPath(import.meta.url);
@@ -24,7 +21,7 @@ const allowedOrigins = [
   'https://giveaze.com',
   'https://admin.giveaze.com',
   'http://localhost:5173',
-  'http://localhost:5174'
+  'http://localhost:5174',
 ];
 
 const corsOptions = {
@@ -40,8 +37,12 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
-app.use(bodyParser.json());
-app.use(express.urlencoded({ extended: true }));
+
+// Body parser configuration to handle large image/file uploads
+app.use(express.json({ limit: '50mb' })); // Allows larger JSON payloads (e.g., large base64 images)
+app.use(express.urlencoded({ limit: '50mb', extended: true })); // Allows large URL-encoded form data
+
+// Static file serving for images
 app.use('/images', express.static(path.join(__dirname, 'images')));
 
 // Routes
@@ -50,19 +51,6 @@ app.use('/api/donation_campaign', donationRoutes);
 app.use('/api/enquiry', enquiryRoutes);
 app.use('/api/subDonation', subDonationRoutes);
 app.use('/api/category', categoryRoutes);
-
-// Database Connection
-// sequelize.authenticate()
-//   .then(() => {
-//     console.log('PostgreSQL database connected');
-//     return createTables(); 
-//   })
-//   .then(() => {
-//     console.log('Tables created successfully');
-//   })
-//   .catch(err => {
-//     console.error('Unable to connect to the database or create tables:', err);
-//   });
 
 // Start server
 app.listen(PORT, () => {

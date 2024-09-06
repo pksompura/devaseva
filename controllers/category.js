@@ -171,11 +171,10 @@ export const getDonationCategoryById = async (req, res) => {
 
 export const updateDonationCategory = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { name, description } = req.body;
+    const { name, description ,_id} = req.body;
 
-    const category = await DonationCategory.findById(id);
-
+    const category = await DonationCategory.findById(_id);
+   console.log(category)
     if (!category) {
       return res.status(404).json({ status: false, message: 'Donation category not found', data: null });
     }
@@ -204,7 +203,7 @@ export const deleteDonationCategory = async (req, res) => {
       return res.status(404).json({ status: false, message: 'Donation category not found', data: null });
     }
 
-    await category.remove();
+    await DonationCategory.findByIdAndDelete(id);
 
     res.status(200).json({
       status: true,

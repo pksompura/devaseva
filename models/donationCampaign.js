@@ -2,56 +2,97 @@ import mongoose from 'mongoose';
 
 // Donation Campaign Schema
 const donationCampaignSchema = new mongoose.Schema({
-  featured_image_base_url: String,
-  featured_image_path: String,
-  temple_name: String,
-  campaign_name: String,
-  description: String,
-  short_name: String,
-  short_description: String,
-  location: String,
-  event: String,
-  priority: Number,
-  target_amount: mongoose.Types.Decimal128,
-  donated_amount: {
+  // Campaign Title
+  campaign_title: {
+    type: String,
+    required: true,
+  },
+  
+  // Campaign Description
+  campaign_description: {
+    type: String,
+    required: true,
+  },
+  
+  // Target Amount
+  target_amount: {
     type: mongoose.Types.Decimal128,
-    default: 0.00,
+    required: true,
   },
-  start_date: Date,
-  expiry_date: Date,
-  is_published: Boolean,
-  is_expired: Boolean,
-  tax_beneficiary: Boolean,
-  billing_address: Boolean,
-  about: String,
-  is_active: Boolean,
-  created_at: {
+  
+  // Minimum Donation Amount
+  minimum_amount: {
+    type: mongoose.Types.Decimal128,
+    required: true,
+  },
+  
+  // Campaign Start Date
+  start_date: {
     type: Date,
-    default: Date.now,
+    required: true,
   },
-  updated_at: {
+  
+  // Campaign End Date
+  end_date: {
     type: Date,
-    default: Date.now,
+    required: true,
+    validate: {
+      validator: function(value) {
+        return value > this.start_date;
+      },
+      message: 'End date must be after the start date',
+    },
   },
-  // slug: {
-  //   type: String,
-  //   unique: true,
-  // },
-  row_pre_id: String,
-  is_anonymous: Boolean,
-  is_whatsapp_update: Boolean,
-  minimum_amount: mongoose.Types.Decimal128,
-  banner_image_id: mongoose.Schema.Types.ObjectId,
-  trust: String,
-  category_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'DonationCategory',
+  
+  // Campaign Main Picture (Single Image URL/Path)
+  main_picture: {
+    type: String,  // Use a simple string to represent the image URL/path
   },
-  // Add subdonations field to link with Subdonation model
-  subdonations: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Subdonations',
+  
+  // Campaign Other Pictures (Array of Image URLs/Paths)
+  other_pictures: [{
+    type: String,  // Each image is represented as a string (URL/path)
   }],
+  
+  // Video Link
+  video_link: {
+    type: String,
+  },
+  
+  // NGO Name
+  ngo_name: {
+    type: String,
+    required: true,
+  },
+  
+  // Establishment Year of NGO
+  establishment_year: {
+    type: Number,
+  },
+  
+  // State of the Campaign
+  state: {
+    type: String,
+    required: true,
+  },
+  
+  // Beneficiary Details
+  beneficiary: {
+    type: String,
+    required: true,
+  },
+  
+  // Approval Status
+  is_approved: {
+    type: Boolean,
+    default: false,
+  },
+  
+  // Expiration Status
+  is_expired: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const DonationCampaign = mongoose.model('DonationCampaign', donationCampaignSchema);

@@ -83,6 +83,6 @@ const userSchema = new mongoose.Schema({
   otp: String,
 });
 
-const User = mongoose.model('User', userSchema);
+const User = mongoose.model('User_donation', userSchema);
 
 export default User;

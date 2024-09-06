@@ -171,13 +171,14 @@ export const sendOTP = async (req, res) => {
 // Verify OTP
 export const verifyOTP = async (req, res) => {
   const { mobile_number, otp } = req.body;
+  console.log(mobile_number,otp)
   if (!mobile_number || !otp) {
     return res.status(400).json({ error: 'Mobile number and OTP are required' });
   }
 
   try {
     const user = await User.findOne({ mobile_number, otp });
-
+console.log(user)
     if (!user) {
       return res.status(400).json({ error: 'Invalid OTP' });
     }
@@ -185,7 +186,7 @@ export const verifyOTP = async (req, res) => {
     user.otp = null;
     await user.save();
 
-    const token = jwt.sign({ id: user._id, mobile_number: user.mobile_number }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: user._id, mobile_number: user.mobile_number }, "process.env.JWT_SECRET", {
       expiresIn: '1h',
     });
 
