@@ -205,6 +205,81 @@ export const deleteDonationCampaign = async (req, res) => {
 // };
 
 
+// export const updateDonationCampaign = async (req, res) => {
+//   try {
+//     const { main_picture, other_pictures, ...data } = req.body;
+//     const { id } = req.params;
+
+//     const campaign = await DonationCampaign.findById(id);
+
+//     if (!campaign) {
+//       return res.status(404).json({ error: 'Campaign not found' });
+//     }
+
+//     Object.assign(campaign, data);
+
+//     // Update main image
+//     if (main_picture) {
+//       if (/^data:image\/[a-zA-Z]+;base64,/.test(main_picture)) {
+//         const oldMainImagePath = campaign.main_picture;
+
+//         if (oldMainImagePath && fs.existsSync(path.resolve('images', oldMainImagePath))) {
+//           fs.unlinkSync(path.resolve('images', oldMainImagePath));
+//         }
+
+//         const newMainImagePath = saveBase64Image(main_picture, id, 'main');
+//         campaign.main_picture = newMainImagePath;
+//       } else {
+//         campaign.main_picture = main_picture; // Keep the URL as it is if it's provided
+//       }
+//     } else if (campaign.main_picture) {
+//       // If no main picture is sent in the body, delete the existing one
+//       const oldMainImagePath = campaign.main_picture;
+//       if (oldMainImagePath && fs.existsSync(path.resolve('images', oldMainImagePath))) {
+//         fs.unlinkSync(path.resolve('images', oldMainImagePath));
+//       }
+//       campaign.main_picture = null;
+//     }
+
+//     // Update other images
+//     if (other_pictures) {
+//       if (other_pictures.length) {
+//         const oldOtherPictures = campaign.other_pictures;
+//         oldOtherPictures.forEach((pic) => {
+//           const picPath = path.resolve('images', pic);
+//           if (fs.existsSync(picPath)) {
+//             fs.unlinkSync(picPath);
+//           }
+//         });
+
+//         const newOtherPictures = other_pictures.map((image, index) => {
+//           if (/^data:image\/[a-zA-Z]+;base64,/.test(image)) {
+//             return saveBase64Image(image, id, index);
+//           } else {
+//             return image; // Keep the URL as it is if it's provided
+//           }
+//         });
+
+//         campaign.other_pictures = newOtherPictures;
+//       } else {
+//         // If no other_pictures are sent in the body, delete the existing ones
+//         campaign.other_pictures.forEach((pic) => {
+//           const picPath = path.resolve('images', pic);
+//           if (fs.existsSync(picPath)) {
+//             fs.unlinkSync(picPath);
+//           }
+//         });
+//         campaign.other_pictures = [];
+//       }
+//     }
+
+//     await campaign.save();
+
+//     res.status(200).json({ status: true, message: 'Campaign updated successfully', data: campaign });
+//   } catch (error) {
+//     res.status(400).json({ error: error.message });
+//   }
+// };
 export const updateDonationCampaign = async (req, res) => {
   try {
     const { main_picture, other_pictures, ...data } = req.body;
@@ -221,6 +296,7 @@ export const updateDonationCampaign = async (req, res) => {
     // Update main image
     if (main_picture) {
       if (/^data:image\/[a-zA-Z]+;base64,/.test(main_picture)) {
+        // If the main_picture is a base64 string, save the new image
         const oldMainImagePath = campaign.main_picture;
 
         if (oldMainImagePath && fs.existsSync(path.resolve('images', oldMainImagePath))) {
@@ -230,10 +306,11 @@ export const updateDonationCampaign = async (req, res) => {
         const newMainImagePath = saveBase64Image(main_picture, id, 'main');
         campaign.main_picture = newMainImagePath;
       } else {
-        campaign.main_picture = main_picture; // Keep the URL as it is if it's provided
+        // If the main_picture is a URL, keep it as is (don't modify the path)
+        campaign.main_picture = main_picture;
       }
     } else if (campaign.main_picture) {
-      // If no main picture is sent in the body, delete the existing one
+      // If no main_picture is sent in the body, delete the existing one
       const oldMainImagePath = campaign.main_picture;
       if (oldMainImagePath && fs.existsSync(path.resolve('images', oldMainImagePath))) {
         fs.unlinkSync(path.resolve('images', oldMainImagePath));
@@ -243,34 +320,43 @@ export const updateDonationCampaign = async (req, res) => {
 
     // Update other images
     if (other_pictures) {
-      if (other_pictures.length) {
-        const oldOtherPictures = campaign.other_pictures;
-        oldOtherPictures.forEach((pic) => {
+      // Filter out base64 images from the URLs
+      const newOtherPictures = [];
+      const existingUrls = [];
+
+      // Separate the URLs and base64 images
+      other_pictures.forEach((image, index) => {
+        if (/^data:image\/[a-zA-Z]+;base64,/.test(image)) {
+          // Save the base64 image
+          const savedImage = saveBase64Image(image, id, index);
+          newOtherPictures.push(savedImage);
+        } else {
+          // This is an existing URL, so we keep it as is
+          existingUrls.push(image);
+        }
+      });
+
+      // Delete old images that are not in the existingUrls
+      campaign.other_pictures.forEach((pic) => {
+        if (!existingUrls.includes(`${req.protocol}://${req.get('host')}/images/${pic}`)) {
           const picPath = path.resolve('images', pic);
           if (fs.existsSync(picPath)) {
             fs.unlinkSync(picPath);
           }
-        });
+        }
+      });
 
-        const newOtherPictures = other_pictures.map((image, index) => {
-          if (/^data:image\/[a-zA-Z]+;base64,/.test(image)) {
-            return saveBase64Image(image, id, index);
-          } else {
-            return image; // Keep the URL as it is if it's provided
-          }
-        });
-
-        campaign.other_pictures = newOtherPictures;
-      } else {
-        // If no other_pictures are sent in the body, delete the existing ones
-        campaign.other_pictures.forEach((pic) => {
-          const picPath = path.resolve('images', pic);
-          if (fs.existsSync(picPath)) {
-            fs.unlinkSync(picPath);
-          }
-        });
-        campaign.other_pictures = [];
-      }
+      // Combine existing URLs with newly uploaded base64 images
+      campaign.other_pictures = [...existingUrls.map(url => url.replace(`${req.protocol}://${req.get('host')}/images/`, '')), ...newOtherPictures];
+    } else {
+      // If no other_pictures are sent in the body, delete the existing ones
+      campaign.other_pictures.forEach((pic) => {
+        const picPath = path.resolve('images', pic);
+        if (fs.existsSync(picPath)) {
+          fs.unlinkSync(picPath);
+        }
+      });
+      campaign.other_pictures = [];
     }
 
     await campaign.save();
