@@ -25,14 +25,17 @@
 // export default DonationCategory;
 import mongoose from 'mongoose';
 
-const donationCategorySchema = new mongoose.Schema({
+// Category Schema
+const categorySchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    unique: true,
+  },
+  description: {
+    type: String,
   },
 });
 
-const DonationCategory = mongoose.model('DonationCategory', donationCategorySchema);
+const Category = mongoose.model('Category', categorySchema);
 
-export default DonationCategory;
+export default Category;

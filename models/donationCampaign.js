@@ -46,12 +46,12 @@ const donationCampaignSchema = new mongoose.Schema({
   
   // Campaign Main Picture (Single Image URL/Path)
   main_picture: {
-    type: String,  // Use a simple string to represent the image URL/path
+    type: String,
   },
   
   // Campaign Other Pictures (Array of Image URLs/Paths)
   other_pictures: [{
-    type: String,  // Each image is represented as a string (URL/path)
+    type: String,
   }],
   
   // Video Link
@@ -92,6 +92,13 @@ const donationCampaignSchema = new mongoose.Schema({
   is_expired: {
     type: Boolean,
     default: false,
+  },
+  
+  // Reference to Category
+  category: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category', // Assuming you have a Category model
+    required: true,  // Optional based on your use case
   },
 });
 
