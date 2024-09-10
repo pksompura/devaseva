@@ -368,3 +368,40 @@ console.log("oldMainImagePath")
     res.status(400).json({ error: error.message });
   }
 };
+
+
+// Fetch donation campaigns by category
+export const getCampaignsByCategory = async (req, res) => {
+  try {
+    const { category } = req.params;
+
+    // Find campaigns based on the category slug or name
+    const campaigns = await DonationCampaign.find({ category })
+      .populate('category') // Assuming 'category' is a reference, if not, remove this line
+      .exec();
+
+    if (!campaigns.length) {
+      return res.status(404).json({
+        status: false,
+        message: `No campaigns found for the category: ${category}`,
+        data: null,
+      });
+    }
+
+    const updatedCampaigns = campaigns.map((campaign) => ({
+      ...campaign._doc,
+      main_picture: campaign.main_picture ? `${req.protocol}://${req.get('host')}/images/${campaign.main_picture}` : null,
+      other_pictures: campaign.other_pictures?.length
+        ? campaign.other_pictures.map((pic) => `${req.protocol}://${req.get('host')}/images/${pic}`)
+        : [],
+    }));
+
+    res.status(200).json({
+      status: true,
+      message: 'Campaigns fetched successfully',
+      data: updatedCampaigns,
+    });
+  } catch (error) {
+    res.status(400).json({ status: false, message: error.message, data: null });
+  }
+};
