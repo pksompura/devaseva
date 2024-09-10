@@ -371,23 +371,47 @@ console.log("oldMainImagePath")
 
 
 // Fetch donation campaigns by category
-export const getCampaignsByCategory = async (req, res) => {
+// Fetch donation campaigns by category with search
+export const getCampaignsByCategoryWithSearch = async (req, res) => {
   try {
     const { category } = req.params;
+    const { search } = req.query;
+    const page = parseInt(req.query.page) || 1; // Default to page 1
+    const perPage = parseInt(req.query.perPage) || 10; // Default to 10 items per page
 
-    // Find campaigns based on the category slug or name
-    const campaigns = await DonationCampaign.find({ category })
-      .populate('category') // Assuming 'category' is a reference, if not, remove this line
+    // Build the query object
+    const query = {};
+
+    // Only apply category filter if it's not "All"
+    if (category && category !== 'All') {
+      query.category = category;
+    }
+
+    // Apply search filter if a search term is provided
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } }, // Case-insensitive search in title
+        { organization: { $regex: search, $options: 'i' } }, // Case-insensitive search in organization
+      ];
+    }
+
+    // Find campaigns based on the query object
+    const totalCampaigns = await DonationCampaign.countDocuments(query); // Total campaigns for pagination
+    const campaigns = await DonationCampaign.find(query)
+      .populate('category') // Populate category if it's a reference, remove if unnecessary
+      .limit(perPage)
+      .skip((page - 1) * perPage) // Implement pagination
       .exec();
 
     if (!campaigns.length) {
       return res.status(404).json({
         status: false,
-        message: `No campaigns found for the category: ${category}`,
+        message: `No campaigns found for the category: ${category || 'All'} with search term: ${search || ''}`,
         data: null,
       });
     }
 
+    // Format the image URLs
     const updatedCampaigns = campaigns.map((campaign) => ({
       ...campaign._doc,
       main_picture: campaign.main_picture ? `${req.protocol}://${req.get('host')}/images/${campaign.main_picture}` : null,
@@ -396,10 +420,17 @@ export const getCampaignsByCategory = async (req, res) => {
         : [],
     }));
 
+    // Send response with pagination data
     res.status(200).json({
       status: true,
       message: 'Campaigns fetched successfully',
-      data: updatedCampaigns,
+      data: {
+        campaigns: updatedCampaigns,
+        totalCampaigns, // Total number of matching campaigns for pagination
+        currentPage: page,
+        totalPages: Math.ceil(totalCampaigns / perPage),
+        perPage,
+      },
     });
   } catch (error) {
     res.status(400).json({ status: false, message: error.message, data: null });
