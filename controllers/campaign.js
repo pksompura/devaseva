@@ -284,7 +284,7 @@ export const updateDonationCampaign = async (req, res) => {
   try {
     const { main_picture, other_pictures, ...data } = req.body;
     const { id } = req.params;
-
+console.log(main_picture)
     const campaign = await DonationCampaign.findById(id);
 
     if (!campaign) {
@@ -298,29 +298,27 @@ export const updateDonationCampaign = async (req, res) => {
       if (/^data:image\/[a-zA-Z]+;base64,/.test(main_picture)) {
         // If the main_picture is a base64 string, save the new image
         const oldMainImagePath = campaign.main_picture;
-
+console.log("oldMainImagePath")
         if (oldMainImagePath && fs.existsSync(path.resolve('images', oldMainImagePath))) {
           fs.unlinkSync(path.resolve('images', oldMainImagePath));
         }
 
         const newMainImagePath = saveBase64Image(main_picture, id, 'main');
         campaign.main_picture = newMainImagePath;
-      } else if (!main_picture.startsWith('http')) {
-        console.log(main_picture)
-        campaign.main_picture = main_picture;
       } else {
-        // If the main_picture is already a full URL, keep it as is
+        console.log(main_picture)
+        // If the main_picture is a URL, keep it as is (don't modify the path)
         campaign.main_picture = main_picture;
       }
     } 
-    else if (campaign.main_picture) {
-      // If no main_picture is sent in the body, delete the existing one
-      const oldMainImagePath = campaign.main_picture;
-      if (oldMainImagePath && fs.existsSync(path.resolve('images', oldMainImagePath))) {
-        fs.unlinkSync(path.resolve('images', oldMainImagePath));
-      }
-      campaign.main_picture = null;
-    }
+    // else if (campaign.main_picture) {
+    //   // If no main_picture is sent in the body, delete the existing one
+    //   const oldMainImagePath = campaign.main_picture;
+    //   if (oldMainImagePath && fs.existsSync(path.resolve('images', oldMainImagePath))) {
+    //     fs.unlinkSync(path.resolve('images', oldMainImagePath));
+    //   }
+    //   campaign.main_picture = null;
+    // }
 
     // Update other images
     if (other_pictures) {
