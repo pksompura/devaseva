@@ -309,14 +309,15 @@ export const updateDonationCampaign = async (req, res) => {
         // If the main_picture is a URL, keep it as is (don't modify the path)
         campaign.main_picture = main_picture;
       }
-    } else if (campaign.main_picture) {
-      // If no main_picture is sent in the body, delete the existing one
-      const oldMainImagePath = campaign.main_picture;
-      if (oldMainImagePath && fs.existsSync(path.resolve('images', oldMainImagePath))) {
-        fs.unlinkSync(path.resolve('images', oldMainImagePath));
-      }
-      campaign.main_picture = null;
-    }
+    } 
+    // else if (campaign.main_picture) {
+    //   // If no main_picture is sent in the body, delete the existing one
+    //   const oldMainImagePath = campaign.main_picture;
+    //   if (oldMainImagePath && fs.existsSync(path.resolve('images', oldMainImagePath))) {
+    //     fs.unlinkSync(path.resolve('images', oldMainImagePath));
+    //   }
+    //   campaign.main_picture = null;
+    // }
 
     // Update other images
     if (other_pictures) {
