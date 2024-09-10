@@ -306,8 +306,8 @@ export const updateDonationCampaign = async (req, res) => {
         const newMainImagePath = saveBase64Image(main_picture, id, 'main');
         campaign.main_picture = newMainImagePath;
       } else if (!main_picture.startsWith('http')) {
-        // If the main_picture is not a full URL and not base64, add the correct path
-        campaign.main_picture = `${req.protocol}://${req.get('host')}/images/${main_picture}`;
+        console.log(main_picture)
+        campaign.main_picture = main_picture;
       } else {
         // If the main_picture is already a full URL, keep it as is
         campaign.main_picture = main_picture;
