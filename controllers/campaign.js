@@ -451,9 +451,9 @@ const uploadImageToFTP = async (localFilePath, remoteFileName) => {
   
   try {
     await client.access({
-      host: "your-hostinger-ftp-host",  // Hostinger FTP host
-      user: "your-ftp-username",        // FTP username
-      password: "your-ftp-password",    // FTP password
+      host: "giveaze.com",  // Hostinger FTP host
+      user: "pksompura@hotmail.com",        // FTP username
+      password: "Pksompura1#",    // FTP password
       secure: false                     // Set to true if using FTPS
     });
 
