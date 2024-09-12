@@ -196,6 +196,58 @@ console.log(user)
   }
 };
 
+
+// Register or Login User at the time of Donation
+export const registerOrLoginUser = async (req, res) => {
+  const { name, email, mobile_number } = req.body;
+
+  // Validate input fields
+  if (!name || !email || !mobile_number) {
+    return res.status(400).json({ error: 'Name, email, and mobile number are required' });
+  }
+
+  try {
+    // Check if the user already exists
+    let user = await User.findOne({ mobile_number });
+
+    // Generate OTP
+    const otp = generateOTP();
+
+    if (user) {
+      // User exists, update OTP
+      user.otp = otp;
+      await user.save();
+
+      // Send OTP
+      await sendSMS(`91${mobile_number}`, from, `Your OTP is: ${otp}`);
+
+      return res.status(200).json({
+        message: 'OTP sent successfully. Please verify to proceed.',
+        user: { name: user.name, email: user.email, mobile_number: user.mobile_number },
+      });
+    } else {
+      // Create a new user with the OTP
+      const newUser = new User({
+        name,
+        email,
+        mobile_number,
+        otp,
+      });
+      await newUser.save();
+
+      // Send OTP
+      await sendSMS(`91${mobile_number}`, from, `Your OTP is: ${otp}`);
+
+      return res.status(201).json({
+        message: 'Registration successful. OTP sent successfully.',
+        user: { name: newUser.name, email: newUser.email, mobile_number: newUser.mobile_number },
+      });
+    }
+  } catch (error) {
+    console.error('Error during registration or OTP sending:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
 // List users
 export const listUsers = async (req, res) => {
   try {

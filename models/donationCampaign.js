@@ -8,6 +8,12 @@ const donationCampaignSchema = new mongoose.Schema({
     required: true,
   },
   
+  // Short Description
+  short_description: {
+    type: String,
+    required: true,
+  },
+
   // Campaign Description
   campaign_description: {
     type: String,
