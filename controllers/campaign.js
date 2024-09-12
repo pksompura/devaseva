@@ -457,7 +457,7 @@ const uploadImageToFTP = async (localFilePath, remoteFileName) => {
       secure: false                     // Set to true if using FTPS
     });
 
-    await client.uploadFrom(localFilePath, `public_html/images/${remoteFileName}`);
+    await client.uploadFrom(localFilePath, `public_html/uploaded_images/${remoteFileName}`);
     console.log('Image uploaded successfully via FTP.');
   } catch (err) {
     console.error('FTP upload error:', err);
