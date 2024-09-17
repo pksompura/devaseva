@@ -66,12 +66,7 @@ import mongoose from 'mongoose';
 const userSchema = new mongoose.Schema({
   first_name: String,
   last_name: String,
-  email: {
-    type: String,
-    required: false,
-    default: 'no-email@example.com', // Default value to avoid duplicates
-    unique: true,
-  },
+  
   mobile_number: {
     type: String,
     unique: true,
