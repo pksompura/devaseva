@@ -56,6 +56,7 @@ const donationCampaignSchema = new mongoose.Schema({
   },
   
   // Campaign Other Pictures (Array of Image URLs/Paths)
+  
   other_pictures: [{
     type: String,
   }],

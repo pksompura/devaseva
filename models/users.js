@@ -68,6 +68,8 @@ const userSchema = new mongoose.Schema({
   last_name: String,
   email: {
     type: String,
+    required: false,
+    default: 'no-email@example.com', // Default value to avoid duplicates
     unique: true,
   },
   mobile_number: {
@@ -86,3 +88,5 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model('User_donation', userSchema);
 
 export default User;
+
+ 

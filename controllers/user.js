@@ -111,7 +111,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/users.js';
-import { Vonage } from '@vonage/server-sdk';
+import axios from 'axios';
 
 const router = express.Router();
 
@@ -130,20 +130,34 @@ const isTokenBlacklisted = (req, res, next) => {
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
-const vonage = new Vonage({
-  apiKey: "32f2a9f4",
-  apiSecret: "aQ0wZEqAB3YVwkAp"
-});
 
-const from = "Vonage APIs";
-
-async function sendSMS(to, from, text) {
-  await vonage.sms.send({ to, from, text })
-    .then(resp => { console.log('Message sent successfully'); console.log(resp); })
-    .catch(err => { console.log('There was an error sending the messages.'); console.error(err); });
+// Send OTP using SMSINDIAHUB API
+async function sendSMS(to, message) {
+ 
+  // const apiUrl = `http://cloud.smsindiahub.in/api/mt/SendSMS?APIKey=dfpVksGa6Em6a6UIefUbZQ&senderid=AREPLY&channel=Trans&DCS=0&flashsms=0&number=${to}&text=${message}&route=Transactional&PEId=1701158019630577568`; 
+ const apiUrl =`http://cloud.smsindiahub.in/vendorsms/pushsms.aspx?APIKey=dfpVksGa6Em6a6UIefUbZQ&msisdn=${to}&sid=AREPLY&msg=Your One Time Password is ${message}. Thanks SMSINDIAHUB&fl=0&gwid=2&DCS=0`
+  //  const params = {
+  //   user: 'pksompura',           // Replace with your SMSINDIAHUB username
+  //   password: 'Pksompura1#',       // Replace with your SMSINDIAHUB password
+  //   senderid: 'AREPLY',             // Replace with your approved SenderID
+  //   channel: 'Transactional',               // Use 'Trans' for transactional SMS
+  //   DCS: 0,
+  //   flashsms: 0,
+  //   number: to,                     // Mobile number of the user
+  //   text: message, // This should match the template text
+  //   DLTTemplateId: '1007248488345555325',  // Replace with the approved DLT Template ID
+  //   route: 'AREPLY',
+  //   PEId: '1701158019630577568'              // Replace with your Principal Entity ID
+  // };
+  try {
+    const response = await axios.post(apiUrl);
+    console.log('SMS sent:', response.data);
+  } catch (error) {
+    console.error('Error sending SMS:', error);
+    throw new Error('Failed to send SMS');
+  }
 }
 
-// Send OTP
 export const sendOTP = async (req, res) => {
   const { mobile_number } = req.body;
   if (!mobile_number) {
@@ -153,40 +167,54 @@ export const sendOTP = async (req, res) => {
   try {
     const otp = generateOTP();
     let user = await User.findOne({ mobile_number });
+
     if (user) {
+      // If the user exists, update the OTP
       user.otp = otp;
       await user.save();
     } else {
+      // If the user doesn't exist, create a new user with mobile_number and otp
       user = new User({ mobile_number, otp });
-      await user.save();
+      
+      try {
+        // Try saving the new user to the database
+        const result = await user.save();
+        console.log('User created:', result);
+      } catch (saveError) {
+        // Catch specific errors related to saving the new user
+        console.error('Error saving user:', saveError.message);
+        return res.status(500).json({ error: 'Failed to create user. Please try again later.' });
+      }
     }
 
-    await sendSMS(`91${mobile_number}`, from, otp);
-    res.status(200).json({ message: 'OTP sent successfully' });
+    // Send OTP via SMS
+    await sendSMS(`91${mobile_number}`, otp);
+    return res.status(200).json({ message: 'OTP sent successfully' });
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    // Log the full error to understand the cause
+    console.error('Internal server error:', error.message);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 
 // Verify OTP
 export const verifyOTP = async (req, res) => {
   const { mobile_number, otp } = req.body;
-  console.log(mobile_number,otp)
   if (!mobile_number || !otp) {
     return res.status(400).json({ error: 'Mobile number and OTP are required' });
   }
 
   try {
     const user = await User.findOne({ mobile_number, otp });
-console.log(user)
     if (!user) {
       return res.status(400).json({ error: 'Invalid OTP' });
     }
 
-    user.otp = null;
+    user.otp = null; // Clear the OTP after successful verification
     await user.save();
 
-    const token = jwt.sign({ id: user._id, mobile_number: user.mobile_number }, "process.env.JWT_SECRET", {
+    const token = jwt.sign({ id: user._id, mobile_number: user.mobile_number }, "praveen1", {
       expiresIn: '1h',
     });
 
@@ -196,48 +224,32 @@ console.log(user)
   }
 };
 
-
 // Register or Login User at the time of Donation
 export const registerOrLoginUser = async (req, res) => {
   const { name, email, mobile_number } = req.body;
 
-  // Validate input fields
   if (!name || !email || !mobile_number) {
     return res.status(400).json({ error: 'Name, email, and mobile number are required' });
   }
 
   try {
-    // Check if the user already exists
     let user = await User.findOne({ mobile_number });
-
-    // Generate OTP
     const otp = generateOTP();
 
     if (user) {
-      // User exists, update OTP
       user.otp = otp;
       await user.save();
 
-      // Send OTP
-      await sendSMS(`91${mobile_number}`, from, `Your OTP is: ${otp}`);
-
+      await sendSMS(`91${mobile_number}`, `Your OTP is: ${otp}`);
       return res.status(200).json({
         message: 'OTP sent successfully. Please verify to proceed.',
         user: { name: user.name, email: user.email, mobile_number: user.mobile_number },
       });
     } else {
-      // Create a new user with the OTP
-      const newUser = new User({
-        name,
-        email,
-        mobile_number,
-        otp,
-      });
+      const newUser = new User({ name, email, mobile_number, otp });
       await newUser.save();
 
-      // Send OTP
-      await sendSMS(`91${mobile_number}`, from, `Your OTP is: ${otp}`);
-
+      await sendSMS(`91${mobile_number}`, `Your OTP is: ${otp}`);
       return res.status(201).json({
         message: 'Registration successful. OTP sent successfully.',
         user: { name: newUser.name, email: newUser.email, mobile_number: newUser.mobile_number },
@@ -248,6 +260,7 @@ export const registerOrLoginUser = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 // List users
 export const listUsers = async (req, res) => {
   try {
@@ -266,3 +279,6 @@ export const logout = async (req, res) => {
 };
 
 export default router;
+
+
+// 70222 80760

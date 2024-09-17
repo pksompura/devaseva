@@ -22,6 +22,7 @@ const allowedOrigins = [
   'https://admin.giveaze.com',
   'http://localhost:5173',
   'http://localhost:5174',
+  'http://192.168.117.114:5173'
 ];
 
 const corsOptions = {
@@ -39,8 +40,8 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Body parser configuration to handle large image/file uploads
-app.use(express.json({ limit: '50mb' })); // Allows larger JSON payloads (e.g., large base64 images)
-app.use(express.urlencoded({ limit: '50mb', extended: true })); // Allows large URL-encoded form data
+app.use(express.json({ limit: '50mb' }));  
+app.use(express.urlencoded({ limit: '50mb', extended: true }));  
 
 // Static file serving for images
 app.use('/images', express.static(path.join(__dirname, 'images')));
