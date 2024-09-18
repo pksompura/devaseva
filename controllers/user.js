@@ -130,6 +130,37 @@ const isTokenBlacklisted = (req, res, next) => {
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
+// Update user information
+export const updateUserInfo = async (req, res) => {
+  const { first_name, last_name, email, mobile_number, address, profile_pic, pan_number } = req.body;
+  const userId = req.user.id; // Get user ID from the verified JWT token
+
+  try {
+    // Find the user by ID
+    let user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Update user information
+    user.first_name = first_name || user.first_name;
+    user.last_name = last_name || user.last_name;
+    user.email = email || user.email;
+    user.mobile_number = mobile_number || user.mobile_number;
+    user.address = address || user.address;
+    user.profile_pic = profile_pic || user.profile_pic;
+    user.pan_number = pan_number || user.pan_number; // Update the new field
+
+    // Save the updated user
+    await user.save();
+
+    res.status(200).json({ message: 'User information updated successfully', user });
+  } catch (error) {
+    console.error('Error updating user information:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
 
 // Send OTP using SMSINDIAHUB API
 async function sendSMS(to, message) {
@@ -276,6 +307,35 @@ export const logout = async (req, res) => {
   const token = req.headers.authorization.split(' ')[1];
   tokenBlacklist.push(token);
   res.status(200).json({ message: 'Logged out successfully' });
+};
+
+
+// Get user profile controller
+export const getUserProfile = async (req, res) => {
+  const userId = req.user.id; // The user ID from the JWT token
+
+  try {
+    // Find the user by ID
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Return user profile data (you can choose which fields to return)
+    res.status(200).json({status:true,message:"user Fetched successfully",data:{
+      first_name: user.first_name,
+      last_name: user.last_name,
+      email: user.email,
+      mobile_number: user.mobile_number,
+      address: user.address,
+      profile_pic: user.profile_pic,
+      pan_number: user.pan_number
+    }});
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 };
 
 export default router;
