@@ -5,43 +5,54 @@ const donationCampaignSchema = new mongoose.Schema({
   // Campaign Title
   campaign_title: {
     type: String,
-    required: true,
+    required: true, // Required during creation
   },
   
   // Short Description
   short_description: {
     type: String,
-    required: true,
+    required: true, // Required during creation
   },
 
   // Campaign Description
   campaign_description: {
     type: String,
-    required: true,
+    required: true, // Required during creation
   },
   
-  // Target Amount
+  // Campaign Main Picture (Single Image URL/Path)
+  main_picture: {
+    type: String,
+    required: true, // Required during creation
+  },
+  
+  // Campaign Other Pictures (Array of Image URLs/Paths)
+  other_pictures: [{
+    type: String,
+  }],
+  
+  // Target Amount (Optional during creation, can be added later)
   target_amount: {
     type: mongoose.Types.Decimal128,
-    required: true,
+    required: false,
   },
   
-  // Minimum Donation Amount
+  // Minimum Donation Amount (Optional during creation, can be added later)
   minimum_amount: {
     type: mongoose.Types.Decimal128,
-    required: true,
+    required: false,
   },
   
-  // Campaign Start Date
+  // Campaign Start Date (Optional during creation, can be added later)
   start_date: {
     type: Date,
-    required: true,
+    required: false,
   },
   
-  // Campaign End Date
+  // Campaign End Date (Optional during creation, can be added later)
   end_date: {
     type: Date,
-    required: true,
+    required: false,
     validate: {
       validator: function(value) {
         return value > this.start_date;
@@ -49,44 +60,35 @@ const donationCampaignSchema = new mongoose.Schema({
       message: 'End date must be after the start date',
     },
   },
-  
-  // Campaign Main Picture (Single Image URL/Path)
-  main_picture: {
-    type: String,
-  },
-  
-  // Campaign Other Pictures (Array of Image URLs/Paths)
-  
-  other_pictures: [{
-    type: String,
-  }],
-  
-  // Video Link
+
+  // Video Link (Optional during creation)
   video_link: {
     type: String,
+    required: false,
   },
   
-  // NGO Name
+  // NGO Name (Optional during creation)
   ngo_name: {
     type: String,
-    required: true,
+    required: false,
   },
   
-  // Establishment Year of NGO
+  // Establishment Year of NGO (Optional during creation)
   establishment_year: {
     type: Number,
+    required: false,
   },
   
-  // State of the Campaign
+  // State of the Campaign (Optional during creation)
   state: {
     type: String,
-    required: true,
+    required: false,
   },
   
-  // Beneficiary Details
+  // Beneficiary Details (Optional during creation)
   beneficiary: {
     type: String,
-    required: true,
+    required: false,
   },
   
   // Approval Status
@@ -101,11 +103,18 @@ const donationCampaignSchema = new mongoose.Schema({
     default: false,
   },
   
-  // Reference to Category
+  // Reference to Category (Optional during creation)
   category: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Category', // Assuming you have a Category model
-    required: true,  // Optional based on your use case
+    ref: 'Category',
+    required: false,
+  },
+
+  // Reference to User (Creator of the Campaign)
+  created_by: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User_donation',
+    required: true,
   },
 });
 

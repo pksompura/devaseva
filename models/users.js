@@ -20,6 +20,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: false, // optional field
   },
+  role: { // Add roles field
+    type: String,
+    enum: ['user', 'admin'], // Can only be 'user' or 'admin'
+    default: 'user', // Default is 'user'
+  },
 });
 
 const User = mongoose.model('User_donation', userSchema);
