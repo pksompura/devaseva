@@ -205,7 +205,7 @@ export const listDonationCampaignsFalse = async (req, res) => {
 
   try {
     // Fetch only approved campaigns by adding a filter for `is_approved: true`
-    const count = await DonationCampaign.countDocuments({ is_approved: false });
+    const count = await DonationCampaign.countDocuments({ is_approved: false }).populate('User_donation');
     const campaigns = await DonationCampaign.find({ is_approved: false }) // Filter for approved campaigns
       .limit(perPage)
       .skip((page - 1) * perPage);
