@@ -16,11 +16,11 @@ const userSchema = new mongoose.Schema({
   address: String,
   profile_pic: String,
   otp: String,
-  pan_number: { // New Field
+  pan_number: {  
     type: String,
-    required: false, // optional field
+    required: false,  
   },
-  role: { // Add roles field
+  role: {  
     type: String,
     enum: ['user', 'admin'],   
     default: 'user', 

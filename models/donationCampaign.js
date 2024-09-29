@@ -2,7 +2,6 @@ import mongoose from 'mongoose';
 
 // Donation Campaign Schema
 const donationCampaignSchema = new mongoose.Schema({
-  // Campaign Title
   campaign_title: {
     type: String,
     required: true, // Required during creation
@@ -61,25 +60,21 @@ const donationCampaignSchema = new mongoose.Schema({
     },
   },
 
-  // Video Link (Optional during creation)
   video_link: {
     type: String,
     required: false,
   },
   
-  // NGO Name (Optional during creation)
   ngo_name: {
     type: String,
     required: false,
   },
   
-  // Establishment Year of NGO (Optional during creation)
   establishment_year: {
     type: Number,
     required: false,
   },
   
-  // State of the Campaign (Optional during creation)
   state: {
     type: String,
     required: false,
@@ -93,6 +88,10 @@ const donationCampaignSchema = new mongoose.Schema({
   
   // Approval Status
   is_approved: {
+    type: Boolean,
+    default: false,
+  },
+  is_tax: {
     type: Boolean,
     default: false,
   },

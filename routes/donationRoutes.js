@@ -23,7 +23,7 @@ import { authenticateUser } from '../middleware/authMiddleware.js';
 const router = express.Router();
 
 // Route to create a new donation campaign
-router.post('/add', createDonationCampaign);
+router.post('/add',authenticateUser, createDonationCampaign);
 router.post('/user/create-campaign', authenticateUser, createCampaignWithLimitedFields);
 router.post('/user/update-campaign', authenticateUser, updateCampaignWithLimitedFields);
 router.get('/user/campaigns', authenticateUser, getDonationCampaignsByUser);
