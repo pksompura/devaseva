@@ -1,17 +1,12 @@
 import mongoose from 'mongoose';
 
-// Donation Campaign Schema
 const donationCampaignSchema = new mongoose.Schema({
   campaign_title: {
     type: String,
     required: true, // Required during creation
   },
   
-  // Short Description
-  short_description: {
-    type: String,
-    required: true, // Required during creation
-  },
+  
 
   // Campaign Description
   campaign_description: {
@@ -42,23 +37,7 @@ const donationCampaignSchema = new mongoose.Schema({
     required: false,
   },
   
-  // Campaign Start Date (Optional during creation, can be added later)
-  start_date: {
-    type: Date,
-    required: false,
-  },
   
-  // Campaign End Date (Optional during creation, can be added later)
-  end_date: {
-    type: Date,
-    required: false,
-    validate: {
-      validator: function(value) {
-        return value > this.start_date;
-      },
-      message: 'End date must be after the start date',
-    },
-  },
 
   video_link: {
     type: String,
@@ -70,18 +49,14 @@ const donationCampaignSchema = new mongoose.Schema({
     required: false,
   },
   
-  establishment_year: {
-    type: Number,
-    required: false,
-  },
+  
   
   state: {
     type: String,
     required: false,
   },
   
-  // Beneficiary Details (Optional during creation)
-  beneficiary: {
+  video: {
     type: String,
     required: false,
   },
@@ -102,14 +77,12 @@ const donationCampaignSchema = new mongoose.Schema({
     default: false,
   },
   
-  // Reference to Category (Optional during creation)
   category: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',
     required: false,
   },
 
-  // Reference to User (Creator of the Campaign)
   created_by: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User_donation',

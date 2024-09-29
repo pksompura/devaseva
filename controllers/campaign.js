@@ -110,7 +110,13 @@ export const deleteTextEditorImage = async (req, res) => {
 // Create a new donation campaign and send OTP
 export const createDonationCampaign = async (req, res) => {
   try {
+    // Extract `created_by` from the middleware
+    const createdBy = req.user.id;
+
     const { main_picture, other_pictures, phone_number, ...data } = req.body;
+
+    // Set `created_by` in the campaign data
+    data.created_by = createdBy;
 
     // Generate a unique campaign ID upfront
     const campaignId = uuidv4();
@@ -145,14 +151,20 @@ export const createDonationCampaign = async (req, res) => {
       sendOTP(phone_number, otp); // Call the sendOTP function with the entered phone number
     }
 
+    // Create the campaign with the gathered data
     const campaign = new DonationCampaign(data);
     await campaign.save();
 
-    res.status(200).json({ status: true, message: 'Campaign created successfully and OTP sent to user', data: campaign });
+    res.status(200).json({
+      status: true,
+      message: 'Campaign created successfully and OTP sent to user',
+      data: campaign,
+    });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
+
 
 // Get a single donation campaign by ID
 export const getDonationCampaignById = async (req, res) => {

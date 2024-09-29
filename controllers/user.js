@@ -212,17 +212,9 @@ export const getUserProfile = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-
+console.log(user)
     // Return user profile data (you can choose which fields to return)
-    res.status(200).json({status:true,message:"user Fetched successfully",data:{
-      first_name: user.first_name,
-      last_name: user.last_name,
-      email: user.email,
-      mobile_number: user.mobile_number,
-      address: user.address,
-      profile_pic: user.profile_pic,
-      pan_number: user.pan_number
-    }});
+    res.status(200).json({status:true,message:"user Fetched successfully",data:user});
   } catch (error) {
     console.error('Error fetching user profile:', error);
     res.status(500).json({ error: 'Internal server error' });
