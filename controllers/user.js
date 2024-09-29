@@ -150,7 +150,7 @@ export const verifyOTP = async (req, res) => {
 export const registerOrLoginUser = async (req, res) => {
   const { name, email, mobile_number } = req.body;
 
-  if (!name || !email || !mobile_number) {
+  if (!name || !email || !mobile_number) {``
     return res.status(400).json({ error: 'Name, email, and mobile number are required' });
   }
 
@@ -230,6 +230,6 @@ export const getUserProfile = async (req, res) => {
 };
 
 export default router;
-
+  
 
 // 70222 80760

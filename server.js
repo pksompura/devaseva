@@ -1,5 +1,4 @@
 import express from 'express';
-import bodyParser from 'body-parser';
 import path from 'path';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
@@ -16,13 +15,13 @@ const PORT = process.env.PORT || 5001;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// CORS configuration
 const allowedOrigins = [
   'https://giveaze.com',
   'https://admin.giveaze.com',
   'http://localhost:5173',
   'http://localhost:5174',
-  'http://192.168.117.114:5173'
+  'http://192.168.117.114:5173',
+  'http://192.168.165.114:5174'
 ];
 
 const corsOptions = {
@@ -33,11 +32,11 @@ const corsOptions = {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true, // Allow cookies to be sent with requests
+  credentials: true, 
 };
 
-// Middleware
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
+app.use(cors());
 
 // Body parser configuration to handle large image/file uploads
 app.use(express.json({ limit: '50mb' }));  
@@ -53,12 +52,10 @@ app.use('/api/enquiry', enquiryRoutes);
 app.use('/api/subDonation', subDonationRoutes);
 app.use('/api/category', categoryRoutes);
 
-// Start server
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
 
-// Global error handler (optional but recommended)
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send('Something broke!');
