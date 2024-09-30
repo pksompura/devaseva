@@ -392,23 +392,15 @@ export const getCampaignsByCategoryWithSearch = async (req, res) => {
 
     // Only apply the category filter if it's not 'All'
     if (category && category !== 'All') {
-      // Find the category by name
-      const matchingCategory = await Category.findOne({ name: { $regex: category, $options: 'i' } });
-      if (matchingCategory) {
-        query.category = matchingCategory._id; // Set the query to filter by category ObjectId
-      } else {
-        // If no matching category is found, return an empty result
-        return res.status(404).json({
-          status: false,
-          message: `No campaigns found for the category: ${category}`,
-          data: null,
-        });
-      }
+      // Use category as ObjectId directly in the query
+      query.category = category;
     }
 
     // Apply the search filter if a search term is provided
     if (search && search.trim() !== "") {
       query.$or = [
+        { campaign_title: { $regex: search, $options: 'i' } }, // Case-insensitive search on campaign_title
+        { ngo_name: { $regex: search, $options: 'i' } }, // Case-insensitive search on ngo_name
         { title: { $regex: search, $options: 'i' } }, // Case-insensitive search on title
         { organization: { $regex: search, $options: 'i' } }, // Case-insensitive search on organization
       ];
