@@ -17,26 +17,26 @@ const donationCampaignSchema = new mongoose.Schema({
   // Campaign Main Picture (Single Image URL/Path)
   main_picture: {
     type: String,
-    required: true, // Required during creation
+    required: true,
   },
   
-  // Campaign Other Pictures (Array of Image URLs/Paths)
   other_pictures: [{
     type: String,
   }],
   
-  // Target Amount (Optional during creation, can be added later)
   target_amount: {
     type: mongoose.Types.Decimal128,
     required: false,
   },
   
-  // Minimum Donation Amount (Optional during creation, can be added later)
   minimum_amount: {
     type: mongoose.Types.Decimal128,
     required: false,
   },
-  
+  raised_amount: {
+    type: mongoose.Types.Decimal128,
+    required: false,
+  },
   
 
   video_link: {

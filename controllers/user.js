@@ -23,35 +23,42 @@ function generateOTP() {
 }
 // Update user information
 export const updateUserInfo = async (req, res) => {
-  const { first_name, last_name, email, mobile_number, address, profile_pic, pan_number } = req.body;
-  const userId = req.user.id; // Get user ID from the verified JWT token
+  const { full_name, email, mobile_number, address = "", profile_pic = "", pan_number = "", id } = req.body;
 
   try {
-    // Find the user by ID
-    let user = await User.findById(userId);
+    // Find the user by ID provided in the body
+    let user = await User.findById(id);
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    // Check if the mobile number belongs to the current user
+    if (mobile_number && mobile_number !== user.mobile_number) {
+      const existingUser = await User.findOne({ mobile_number });
+      if (existingUser && existingUser._id.toString() !== id) {
+        return res.status(400).json({ error: 'Mobile number already in use by another user' });
+      }
+    }
+
     // Update user information
-    user.first_name = first_name || user.first_name;
-    user.last_name = last_name || user.last_name;
+    user.full_name = full_name || user.full_name;
     user.email = email || user.email;
     user.mobile_number = mobile_number || user.mobile_number;
     user.address = address || user.address;
     user.profile_pic = profile_pic || user.profile_pic;
-    user.pan_number = pan_number || user.pan_number; // Update the new field
+    user.pan_number = pan_number || user.pan_number;
 
     // Save the updated user
     await user.save();
 
-    res.status(200).json({ message: 'User information updated successfully', user });
+    res.status(200).json({status:true, message: 'User information updated successfully', user });
   } catch (error) {
     console.error('Error updating user information:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 
 // Send OTP using SMSINDIAHUB API
 async function sendSMS(to, message) {
@@ -223,5 +230,23 @@ console.log(user)
 
 export default router;
   
+// Delete user controller
+export const deleteUser = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Find the user by ID and delete
+    const user = await User.findByIdAndDelete(id);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.status(200).json({status:true, message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
 
 // 70222 80760

@@ -4,6 +4,7 @@ import { getStorage, ref, getDownloadURL, uploadBytesResumable, deleteObject ,li
 import config from '../config/firebase.config.js';
 import { v4 as uuidv4 } from 'uuid';
 import request from 'request';
+import Category from '../models/donationCategory.js';
 
 // Initialize Firebase app
 initializeApp(config.firebaseConfig);
@@ -389,13 +390,24 @@ export const getCampaignsByCategoryWithSearch = async (req, res) => {
     // Initialize the query object
     const query = {};
 
-    // Only apply the category filter if it's not 'All' or undefined
+    // Only apply the category filter if it's not 'All'
     if (category && category !== 'All') {
-      query.category = category;
+      // Find the category by name
+      const matchingCategory = await Category.findOne({ name: { $regex: category, $options: 'i' } });
+      if (matchingCategory) {
+        query.category = matchingCategory._id; // Set the query to filter by category ObjectId
+      } else {
+        // If no matching category is found, return an empty result
+        return res.status(404).json({
+          status: false,
+          message: `No campaigns found for the category: ${category}`,
+          data: null,
+        });
+      }
     }
 
     // Apply the search filter if a search term is provided
-    if (search) {
+    if (search && search.trim() !== "") {
       query.$or = [
         { title: { $regex: search, $options: 'i' } }, // Case-insensitive search on title
         { organization: { $regex: search, $options: 'i' } }, // Case-insensitive search on organization
@@ -404,12 +416,12 @@ export const getCampaignsByCategoryWithSearch = async (req, res) => {
 
     // Count total campaigns that match the query
     const totalCampaigns = await DonationCampaign.countDocuments(query);
-    
+
     // Fetch the campaigns with pagination and optional search & category filter
     const campaigns = await DonationCampaign.find(query)
       .populate('category')
-      .limit(perPage)
       .skip((page - 1) * perPage)
+      .limit(perPage)
       .exec();
 
     // If no campaigns found, send a 404 response
@@ -438,6 +450,7 @@ export const getCampaignsByCategoryWithSearch = async (req, res) => {
     res.status(400).json({ status: false, message: error.message, data: null });
   }
 };
+
 
 
 
