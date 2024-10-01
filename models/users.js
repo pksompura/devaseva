@@ -29,3 +29,22 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model('User_donation', userSchema);
 
 export default User;
+
+const settingsSchema = new mongoose.Schema({
+  privacypolicy: {
+    type: String,
+    default: '',
+  },
+  terms: {
+    type: String,
+    default: '',
+  },
+  about_us: {
+    type: String,
+    default: '',
+  },
+});
+
+const Settings = mongoose.model('Settings', settingsSchema);
+
+export  {Settings}

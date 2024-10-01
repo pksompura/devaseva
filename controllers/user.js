@@ -1,7 +1,7 @@
 
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import User from '../models/users.js';
+import User, { Settings } from '../models/users.js';
 import axios from 'axios';
 
 const router = express.Router();
@@ -249,4 +249,54 @@ export const deleteUser = async (req, res) => {
   }
 };
 
-// 70222 80760
+
+
+
+export const updateSettings = async (req, res) => {
+  try {
+    const {  privacypolicy,terms,about_us } = req.body;
+console.log(req.user)
+    const user = await User.findById(req.user.id);
+    console.log(user)
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Only admins can update settings.' });
+    }
+
+    let settings = await Settings.findOne();
+    if (!settings) {
+      settings = new Settings();
+    }
+    
+    settings.privacypolicy = privacypolicy || settings.privacypolicy;
+    settings.terms = terms || settings.terms;
+    settings.about_us = about_us || settings.about_us;
+    console.log(settings)
+
+    await settings.save();
+    res.status(200).json({ message: 'Settings updated successfully', settings });
+
+  } catch (error) {
+    res.status(500).json({ message: 'An error occurred while updating settings', error });
+  }
+};
+
+export const getSettings = async (req, res) => {
+  try {
+  
+ 
+    const user = await User.findById(req.user.id);
+ 
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Only admins can update settings.' });
+    }
+
+    let settings = await Settings.findOne();
+   
+
+  
+    res.status(200).json({status:true, message: 'Settings updated successfully', data:settings });
+
+  } catch (error) {
+    res.status(500).json({ message: 'An error occurred while updating settings', error });
+  }
+};

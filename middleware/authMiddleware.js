@@ -30,10 +30,9 @@ export const authenticateAdmin = (req, res, next) => {
   try {
     // Verify the token
     const decoded = jwt.verify(token, "praveen1"); // Ensure the secret matches the one used in token generation
-    req.user = decoded; // Attach decoded token (user info) to request object
+    req.user = decoded; 
     
-    // Check if the user has admin role
-    if (req.user.role !== 'admin') {
+    if (decoded.role !== 'admin') {
       return res.status(403).json({ error: 'Access denied. Admins only.' });
     }
 
