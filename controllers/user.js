@@ -254,10 +254,9 @@ export const deleteUser = async (req, res) => {
 
 export const updateSettings = async (req, res) => {
   try {
-    const {  privacypolicy,terms,about_us } = req.body;
-console.log(req.user)
+    const { privacypolicy, terms, about_us, banner_title, banner_description, banner_link } = req.body;
+
     const user = await User.findById(req.user.id);
-    console.log(user)
     if (!user || user.role !== 'admin') {
       return res.status(403).json({ message: 'Access denied. Only admins can update settings.' });
     }
@@ -266,11 +265,13 @@ console.log(req.user)
     if (!settings) {
       settings = new Settings();
     }
-    
+
     settings.privacypolicy = privacypolicy || settings.privacypolicy;
     settings.terms = terms || settings.terms;
     settings.about_us = about_us || settings.about_us;
-    console.log(settings)
+    settings.banner_title = banner_title || settings.banner_title;
+    settings.banner_description = banner_description || settings.banner_description;
+    settings.banner_link = banner_link || settings.banner_link;
 
     await settings.save();
     res.status(200).json({ message: 'Settings updated successfully', settings });
@@ -280,15 +281,16 @@ console.log(req.user)
   }
 };
 
+
 export const getSettings = async (req, res) => {
   try {
   
  
-    const user = await User.findById(req.user.id);
+    // const user = await User.findById(req.user.id);
  
-    if (!user || user.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Only admins can update settings.' });
-    }
+    // if (!user || user.role !== 'admin') {
+    //   return res.status(403).json({ message: 'Access denied. Only admins can update settings.' });
+    // }
 
     let settings = await Settings.findOne();
    

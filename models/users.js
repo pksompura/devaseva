@@ -43,7 +43,21 @@ const settingsSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  banner_title: {
+    type: String,
+    default: '',
+  },
+  banner_description: {
+    type: String,
+    default: '',
+  },
+  banner_link: {
+    type: String,
+    default: '',
+  },
 });
+
+
 
 const Settings = mongoose.model('Settings', settingsSchema);
 

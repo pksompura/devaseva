@@ -5,7 +5,7 @@ import { authenticateAdmin, authenticateUser } from '../middleware/authMiddlewar
 const router = express.Router();
 
 router.put('/update-settings',authenticateUser, updateSettings);
-router.get('/get-settings',authenticateUser, getSettings);
+router.get('/get-settings', getSettings);
 router.post('/sendOtp', sendOTP);
 router.post('/verifyOtp', verifyOTP);
 router.get('/get-all-users', listUsers);
