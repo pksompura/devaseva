@@ -27,35 +27,20 @@ const allowedOrigins = [
   "http://172.20.10.4:5173",
 ];
 
-// const corsOptions = {
-//   origin: function (origin, callback) {
-//     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-//       callback(null, true);
-//     } else {
-//       callback(new Error("Not allowed by CORS"));
-//     }
-//   },
-//   credentials: true,
-// };
-
-// // ✅ 3. Apply CORS middleware BEFORE body parsers and routes
-// app.use(cors(corsOptions));
-// app.options("*", cors(corsOptions)); // ✅ Handle preflight requests
-
-// ✅ Add this BEFORE any other middleware
 const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow all for now for testing
-    console.log("Incoming Origin:", origin);
-    callback(null, true); // Temporarily allow all
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
   },
   credentials: true,
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
-  allowedHeaders: ["Content-Type", "Authorization"],
 };
 
+// ✅ 3. Apply CORS middleware BEFORE body parsers and routes
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // ✅ handle preflight
+app.options("*", cors(corsOptions)); // ✅ Handle preflight requests
 
 // app.use(cors(corsOptions));
 // app.use(cors("*"));
