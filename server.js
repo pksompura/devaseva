@@ -41,9 +41,14 @@ const corsOptions = {
 // app.use(cors(corsOptions));
 // app.use(cors("*"));
 
-app.use(cors());
+// app.use(cors());
 
-app.options("*", cors());
+// app.options("*", cors());
+app.use(
+  cors({
+    origin: "*",
+  })
+);
 
 // Body parser configuration to handle large image/file uploads
 app.use(express.json({ limit: "50mb" }));
