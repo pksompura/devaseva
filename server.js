@@ -16,11 +16,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const allowedOrigins = [
+  "http://88.222.214.214:3000",
   "https://giveaze.com",
   "https://admin.giveaze.com",
   "http://localhost:5173",
   "http://localhost:5174",
-  "http://88.222.214.214:3000", // ✅ <-- required
   "http://192.168.117.114:5173",
   "http://192.168.165.114:5174",
   "http://192.168.65.114:5173",
@@ -38,7 +38,11 @@ const corsOptions = {
   credentials: true,
 };
 
+// ✅ 3. Apply CORS middleware BEFORE body parsers and routes
 app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // ✅ Handle preflight requests
+
+// app.use(cors(corsOptions));
 // app.use(cors("*"));
 
 // app.use(cors());
