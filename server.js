@@ -28,14 +28,13 @@ const __dirname = path.dirname(__filename);
 // ];
 
 const allowedOrigins = [
-  "http://88.222.214.214:5173", // Vite dev server
-  "http://88.222.214.214:3000", // React dev server
-  "http://localhost:5173",
+  "http://88.222.214.214:3001",
   "http://localhost:3000",
+  "http://localhost:5173",
   "https://giveaze.com",
   "https://admin.giveaze.com",
-  // Add any other origins as needed
 ];
+
 // const corsOptions = {
 //   origin: function (origin, callback) {
 //     // Allow requests with no origin like curl or mobile apps
@@ -48,24 +47,22 @@ const allowedOrigins = [
 //   },
 //   credentials: true,
 // };
-
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.log("❌ Blocked by CORS:", origin);
+      console.log("❌ CORS blocked:", origin);
       callback(new Error("Not allowed by CORS"));
     }
   },
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
-  optionsSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // Enable preflight for all routes
+app.options("*", cors(corsOptions)); // Preflight
 // app.use(cors(corsOptions));
 // app.use(cors("*"));
 
