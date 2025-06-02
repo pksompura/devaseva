@@ -15,25 +15,17 @@ const PORT = process.env.PORT || 5001;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// const allowedOrigins = [
-//   "http://88.222.214.214:3001",
-//   "https://giveaze.com",
-//   "https://admin.giveaze.com",
-//   "http://localhost:5173",
-//   "http://localhost:5174",
-//   "http://192.168.117.114:5173",
-//   "http://192.168.165.114:5174",
-//   "http://192.168.65.114:5173",
-//   "http://172.20.10.4:5173",
-// ];
-
-// const allowedOrigins = [
-//   "http://88.222.214.214:3001",
-//   "http://localhost:3000",
-//   "http://localhost:5173",
-//   "https://giveaze.com",
-//   "https://admin.giveaze.com",
-// ];
+const allowedOrigins = [
+  "http://88.222.214.214:3001",
+  "https://giveaze.com",
+  "https://admin.giveaze.com",
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://192.168.117.114:5173",
+  "http://192.168.165.114:5174",
+  "http://192.168.65.114:5173",
+  "http://172.20.10.4:5173",
+];
 
 // const corsOptions = {
 //   origin: function (origin, callback) {
@@ -47,30 +39,23 @@ const __dirname = path.dirname(__filename);
 //   },
 //   credentials: true,
 // };
-// const corsOptions = {
-//   origin: function (origin, callback) {
-//     if (!origin || allowedOrigins.includes(origin)) {
-//       callback(null, true);
-//     } else {
-//       console.log("❌ CORS blocked:", origin);
-//       callback(new Error("Not allowed by CORS"));
-//     }
-//   },
-//   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-//   allowedHeaders: ["Content-Type", "Authorization"],
-//   credentials: true,
-// };
-
-// app.use(cors(corsOptions));
-// app.options("*", cors(corsOptions)); // Preflight
-// app.use(cors());
-app.use(
-  cors({
-    origin: "*", // allows all origins
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+const corsOptions = {
+  origin: function (origin, callback) {
+    console.log("🌐 Request Origin:", origin);
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log("❌ Blocked by CORS:", origin);
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // Must be before routes
 
 // app.use(cors(corsOptions));
 // app.use(cors("*"));
