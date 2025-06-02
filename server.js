@@ -29,18 +29,19 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+    // Allow requests with no origin like curl or mobile apps
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.log("Blocked by CORS:", origin);
       callback(new Error("Not allowed by CORS"));
     }
   },
   credentials: true,
 };
 
-// ✅ 3. Apply CORS middleware BEFORE body parsers and routes
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // ✅ Handle preflight requests
+app.options("*", cors(corsOptions)); // ✅ must come before routes
 
 // app.use(cors(corsOptions));
 // app.use(cors("*"));
