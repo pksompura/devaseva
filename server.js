@@ -27,21 +27,41 @@ const allowedOrigins = [
   "http://172.20.10.4:5173",
 ];
 
+// const corsOptions = {
+//   origin: function (origin, callback) {
+//     // Allow requests with no origin like curl or mobile apps
+//     if (!origin || allowedOrigins.includes(origin)) {
+//       callback(null, true);
+//     } else {
+//       console.log("Blocked by CORS:", origin);
+//       callback(new Error("Not allowed by CORS"));
+//     }
+//   },
+//   credentials: true,
+// };
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin like curl or mobile apps
+    // Allow requests with no origin (like Postman or curl)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.log("Blocked by CORS:", origin);
+      console.log("❌ Blocked by CORS:", origin);
       callback(new Error("Not allowed by CORS"));
     }
   },
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
+  optionsSuccessStatus: 200, // Fix for legacy browsers (IE)
 };
 
+// app.use(cors(corsOptions));
+// app.options("*", cors(corsOptions)); // ✅ must come before routes
+
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // ✅ must come before routes
+
+// Handle preflight requests explicitly before routes
+app.options("*", cors(corsOptions));
 
 // app.use(cors(corsOptions));
 // app.use(cors("*"));
