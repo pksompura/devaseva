@@ -15,18 +15,27 @@ const PORT = process.env.PORT || 5001;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// const allowedOrigins = [
+//   "http://88.222.214.214:3001",
+//   "https://giveaze.com",
+//   "https://admin.giveaze.com",
+//   "http://localhost:5173",
+//   "http://localhost:5174",
+//   "http://192.168.117.114:5173",
+//   "http://192.168.165.114:5174",
+//   "http://192.168.65.114:5173",
+//   "http://172.20.10.4:5173",
+// ];
+
 const allowedOrigins = [
-  "http://88.222.214.214:3001",
+  "http://88.222.214.214:5173", // Vite dev server
+  "http://88.222.214.214:3000", // React dev server
+  "http://localhost:5173",
+  "http://localhost:3000",
   "https://giveaze.com",
   "https://admin.giveaze.com",
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "http://192.168.117.114:5173",
-  "http://192.168.165.114:5174",
-  "http://192.168.65.114:5173",
-  "http://172.20.10.4:5173",
+  // Add any other origins as needed
 ];
-
 // const corsOptions = {
 //   origin: function (origin, callback) {
 //     // Allow requests with no origin like curl or mobile apps
@@ -39,9 +48,9 @@ const allowedOrigins = [
 //   },
 //   credentials: true,
 // };
+
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like Postman or curl)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -52,17 +61,11 @@ const corsOptions = {
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
-  optionsSuccessStatus: 200, // Fix for legacy browsers (IE)
+  optionsSuccessStatus: 200,
 };
 
-// app.use(cors(corsOptions));
-// app.options("*", cors(corsOptions)); // ✅ must come before routes
-
 app.use(cors(corsOptions));
-
-// Handle preflight requests explicitly before routes
-app.options("*", cors(corsOptions));
-
+app.options("*", cors(corsOptions)); // Enable preflight for all routes
 // app.use(cors(corsOptions));
 // app.use(cors("*"));
 
