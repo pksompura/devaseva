@@ -17,6 +17,8 @@ const __dirname = path.dirname(__filename);
 
 const allowedOrigins = [
   "http://88.222.214.214:3001",
+  "http://88.222.214.214:3000",
+  "https://88.222.214.214",
   "https://giveaze.com",
   "https://admin.giveaze.com",
   "http://localhost:5173",
