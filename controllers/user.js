@@ -556,7 +556,7 @@ export const updateSettings = async (req, res) => {
     settings.banner_description =
       banner_description || settings.banner_description;
     settings.banner_link = banner_link || settings.banner_link;
-
+    console.log(settings.banner_link);
     await settings.save();
     res
       .status(200)

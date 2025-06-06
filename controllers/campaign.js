@@ -15,6 +15,7 @@ import Category from "../models/donationCategory.js";
 import Donation from "../models/donation.js";
 import mongoose from "mongoose";
 import fs from "fs/promises";
+import fsSync from "fs"; // for sync functions like existsSync
 import path from "path";
 import generateReceiptPDF from "../utils/generateReceiptPDF.js"; // Adjust path as needed
 import upload from "../utils/multerConfig.js";
@@ -655,6 +656,7 @@ export const listDonationCampaigns = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+
 export const listDonationCampaignsFalse = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const perPage = parseInt(req.query.perPage) || 10;
@@ -1700,19 +1702,42 @@ export const getDonationCampaignsByUser = async (req, res) => {
 //   }
 // };
 
+// const uploadImageLocallyToBanners = async (buffer, fileName, contentType) => {
+//   try {
+//     // Define the local folder path to save banner images
+//     const uploadDir = path.resolve("images", "banners");
+
+//     // Ensure directory exists (create if missing)
+//     // fs.mkdir(uploadDir, { recursive: true });
+//     await fs.promises.mkdir(uploadDir, { recursive: true });
+
+//     // Full path to save the file
+//     const filePath = path.join(uploadDir, fileName);
+
+//     // Write the buffer to the local file system
+//     await fs.promises.writeFile(filePath, buffer);
+
+//     // Return a relative URL/path to access the banner image
+//     return `/images/banners/${fileName}`;
+//   } catch (error) {
+//     console.error("Local banner upload error:", error);
+//     throw new Error("Failed to upload banner image locally");
+//   }
+// };
+
 const uploadImageLocallyToBanners = async (buffer, fileName, contentType) => {
   try {
     // Define the local folder path to save banner images
     const uploadDir = path.resolve("images", "banners");
 
     // Ensure directory exists (create if missing)
-    fs.mkdirSync(uploadDir, { recursive: true });
+    await fs.mkdir(uploadDir, { recursive: true });
 
     // Full path to save the file
     const filePath = path.join(uploadDir, fileName);
 
     // Write the buffer to the local file system
-    await fs.promises.writeFile(filePath, buffer);
+    await fs.writeFile(filePath, buffer);
 
     // Return a relative URL/path to access the banner image
     return `/images/banners/${fileName}`;
@@ -1834,49 +1859,95 @@ const uploadImageLocallyToBanners = async (buffer, fileName, contentType) => {
 //   }
 // };
 
+// export const updateBannerImage = async (req, res) => {
+//   try {
+//     const { imageUrl, newImage } = req.body;
+
+//     if (!imageUrl || !newImage) {
+//       return res
+//         .status(400)
+//         .json({ error: "Image URL and new image are required" });
+//     }
+
+//     // Extract relative path from imageUrl (e.g. '/images/banners/banner_xxx.jpeg')
+//     const relativePath = imageUrl.replace(/^\/images/, "");
+//     const oldFilePath = path.join(process.cwd(), "images", relativePath);
+
+//     // Delete old banner image if exists
+//     if (fs.existsSync(oldFilePath)) {
+//       await fs.promises.unlink(oldFilePath);
+//     } else {
+//       console.warn("Old banner image not found:", oldFilePath);
+//     }
+
+//     // Convert new base64 image to buffer
+//     const buffer = base64ToBuffer(newImage);
+
+//     // Generate new unique filename
+//     const newFileName = `banner_${uuidv4()}.jpeg`;
+
+//     // Upload new image locally using your helper
+//     const newImageUrl = await uploadImageLocallyToBanners(
+//       buffer,
+//       newFileName,
+//       "image/jpeg"
+//     );
+
+//     // Respond with success and new image URL
+//     res.status(200).json({
+//       status: true,
+//       message: "Banner image updated successfully",
+//       newImageUrl,
+//     });
+//   } catch (error) {
+//     console.error("Error updating banner:", error);
+//     res.status(500).json({ error: "Failed to update banner image" });
+//   }
+// };
+
 export const updateBannerImage = async (req, res) => {
   try {
     const { imageUrl, newImage } = req.body;
 
-    if (!imageUrl || !newImage) {
-      return res
-        .status(400)
-        .json({ error: "Image URL and new image are required" });
+    if (!newImage) {
+      return res.status(400).json({ error: "New image is required" });
     }
 
-    // Extract relative path from imageUrl (e.g. '/images/banners/banner_xxx.jpeg')
-    const relativePath = imageUrl.replace(/^\/images/, "");
-    const oldFilePath = path.join(process.cwd(), "images", relativePath);
-
-    // Delete old banner image if exists
-    if (fs.existsSync(oldFilePath)) {
-      await fs.promises.unlink(oldFilePath);
-    } else {
-      console.warn("Old banner image not found:", oldFilePath);
+    // Step 1: Delete old image if valid path is provided
+    if (
+      imageUrl &&
+      typeof imageUrl === "string" &&
+      imageUrl.startsWith("/images/")
+    ) {
+      const oldFilePath = path.join(process.cwd(), imageUrl);
+      if (fsSync.existsSync(oldFilePath)) {
+        await fs.unlink(oldFilePath);
+        console.log("Old banner image deleted:", oldFilePath);
+      } else {
+        console.warn("Old banner image not found:", oldFilePath);
+      }
     }
 
-    // Convert new base64 image to buffer
-    const buffer = base64ToBuffer(newImage);
+    // Step 2: Convert base64 to buffer
+    const { buffer, mimeType, extension } = base64ToBuffer(newImage);
+    const newFileName = `banner_${uuidv4()}.${extension}`;
 
-    // Generate new unique filename
-    const newFileName = `banner_${uuidv4()}.jpeg`;
-
-    // Upload new image locally using your helper
+    // Step 3: Save new image
     const newImageUrl = await uploadImageLocallyToBanners(
       buffer,
       newFileName,
-      "image/jpeg"
+      mimeType
     );
 
-    // Respond with success and new image URL
-    res.status(200).json({
+    // Step 4: Return response
+    return res.status(200).json({
       status: true,
       message: "Banner image updated successfully",
-      newImageUrl,
+      newImageUrl, // e.g., /images/banners/banner_xxx.png
     });
   } catch (error) {
-    console.error("Error updating banner:", error);
-    res.status(500).json({ error: "Failed to update banner image" });
+    console.error("Error updating banner image:", error.message, error.stack);
+    return res.status(500).json({ error: "Failed to update banner image" });
   }
 };
 
@@ -2007,21 +2078,23 @@ export const deleteBannerImage = async (req, res) => {
 
 export const listBannerImages = async (req, res) => {
   try {
-    // Local folder where banner images are stored
     const bannersDir = path.resolve(process.cwd(), "images", "banners");
 
-    // Read files from the local directory
-    const files = await fs.promises.readdir(bannersDir);
+    // Check if folder exists, create if not
+    try {
+      await fs.access(bannersDir);
+    } catch {
+      await fs.mkdir(bannersDir, { recursive: true });
+    }
 
-    // Filter only image files (optional, here filtering by common extensions)
+    const files = await fs.readdir(bannersDir);
+
     const imageFiles = files.filter((file) =>
       /\.(jpe?g|png|gif|webp)$/i.test(file)
     );
 
-    // Limit to max 3 images
     const limitedImages = imageFiles.slice(0, 3);
 
-    // Map filenames to URLs relative to your static route
     const imageUrls = limitedImages.map(
       (fileName) => `/images/banners/${fileName}`
     );
@@ -2036,6 +2109,40 @@ export const listBannerImages = async (req, res) => {
     res.status(500).json({ error: "Failed to list banner images" });
   }
 };
+
+// export const listBannerImages = async (req, res) => {
+//   try {
+//     // Local folder where banner images are stored
+
+//     const bannersDir = path.resolve(process.cwd(), "images", "banners");
+//     console.log("📁 Banner Dir Path:", bannersDir);
+
+//     // Read files from the local directory
+//     const files = await fs.promises.readdir(bannersDir);
+
+//     // Filter only image files (optional, here filtering by common extensions)
+//     const imageFiles = files.filter((file) =>
+//       /\.(jpe?g|png|gif|webp)$/i.test(file)
+//     );
+
+//     // Limit to max 3 images
+//     const limitedImages = imageFiles.slice(0, 3);
+
+//     // Map filenames to URLs relative to your static route
+//     const imageUrls = limitedImages.map(
+//       (fileName) => `/images/banners/${fileName}`
+//     );
+
+//     res.status(200).json({
+//       status: true,
+//       message: "Banner images fetched successfully",
+//       banners: imageUrls,
+//     });
+//   } catch (error) {
+//     console.error("Error listing local banners:", error);
+//     res.status(500).json({ error: "Failed to list banner images" });
+//   }
+// };
 
 export const getAllDonations = async (req, res) => {
   try {
