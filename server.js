@@ -20,6 +20,7 @@ const allowedOrigins = [
   "http://88.222.214.214:3000",
   "https://88.222.214.214",
   "https://giveaze.com",
+  "https://www.giveaze.com",
   "https://admin.giveaze.com",
   "http://localhost:5173",
   "http://localhost:5174",
