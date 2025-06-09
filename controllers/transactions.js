@@ -441,11 +441,28 @@ export const createOrder = async (req, res) => {
 // };
 
 export const verifyPayment = async (req, res) => {
-  const { razorpay_payment_id, razorpay_order_id, razorpay_signature } =
-    req.body;
+  const {
+    razorpay_payment_id,
+    razorpay_order_id,
+    razorpay_signature,
+    donation_id,
+  } = req.body;
 
   try {
-    // Step 1: Verify payment with Razorpay API
+    // Step 1: Validate Razorpay Signature
+    const generatedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_SECRET)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest("hex");
+
+    if (generatedSignature !== razorpay_signature) {
+      return res.status(400).json({
+        status: false,
+        message: "Invalid Razorpay signature!",
+      });
+    }
+
+    // Step 2: Fetch Razorpay Payment Details
     const razorpayResponse = await axios.get(
       `https://api.razorpay.com/v1/payments/${razorpay_payment_id}`,
       {
@@ -459,50 +476,57 @@ export const verifyPayment = async (req, res) => {
     const paymentDetails = razorpayResponse.data;
 
     if (paymentDetails.status !== "captured") {
-      return res
-        .status(400)
-        .json({ status: false, message: "Payment not captured!" });
+      return res.status(400).json({
+        status: false,
+        message: "Payment not captured!",
+      });
     }
 
-    // Step 2: Find the Donation using Razorpay order ID
-    const donation = await Donation.findOne({
-      transaction_id: razorpay_order_id,
-    })
+    // Step 3: Fetch Donation Record
+    const donation = await Donation.findById(donation_id)
       .populate("donation_campaign_id")
       .populate("user_id");
 
     if (!donation) {
-      return res
-        .status(404)
-        .json({ status: false, message: "Donation not found!" });
+      return res.status(404).json({
+        status: false,
+        message: "Donation not found!",
+      });
     }
 
-    // Step 3: Update donation record
+    // Step 4: Update Donation Details
     donation.payment_status = "successful";
     donation.paid = true;
-    // ❌ Don't overwrite transaction_id
     donation.razorpay_payment_id = razorpay_payment_id;
+
+    // Set transaction_id only if not already set (avoid overwriting)
+    if (!donation.transaction_id) {
+      donation.transaction_id = razorpay_order_id;
+    }
+
     await donation.save();
 
-    // Step 4: Update campaign raised amount
+    // Step 5: Update Campaign Raised Amount
     const campaign = donation.donation_campaign_id;
     if (campaign) {
-      campaign.raised_amount =
-        parseFloat((campaign.raised_amount || 0).toString()) +
-        parseFloat(donation.total_amount.toString());
+      const current = parseFloat(campaign.raised_amount || 0);
+      const donated = parseFloat(donation.total_amount || 0);
+      campaign.raised_amount = (current + donated).toFixed(2);
       await campaign.save();
     }
 
-    // Step 5: Generate Receipt and Send Email (as before)
-    const receiptFileName = `receipt_${donation.transaction_id}.pdf`;
+    // Step 6: Generate Receipt PDF
+    const receiptFileName = `receipt_${donation._id}.pdf`;
     const receiptPath = await generateReceiptPDF(
       donation,
       donation.user_id,
       receiptFileName
     );
+
     donation.receipt_url = `/receipts/${receiptFileName}`;
     await donation.save();
 
+    // Step 7: Send Receipt Email
     await sendDonationReceipt(
       donation.user_id.email,
       donation.user_id.name || donation.user_id.full_name,
@@ -513,17 +537,22 @@ export const verifyPayment = async (req, res) => {
       receiptPath
     );
 
+    // Step 8: Return Success Response
     return res.status(200).json({
       status: true,
-      message: "Payment verified and donation updated",
+      message: "Payment Verified and Donation Updated Successfully",
       donation,
       receipt_url: donation.receipt_url,
     });
   } catch (error) {
-    console.error("Payment Verification Error:", error);
-    return res
-      .status(500)
-      .json({ status: false, message: "Internal Server Error" });
+    console.error(
+      "Payment Verification Error:",
+      error?.response?.data || error.message || error
+    );
+    return res.status(500).json({
+      status: false,
+      message: "Internal Server Error",
+    });
   }
 };
 
