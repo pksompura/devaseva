@@ -20,6 +20,10 @@ const donationSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    razorpay_payment_id: {
+      type: String,
+    },
+
     user_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User_donation",
