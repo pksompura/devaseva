@@ -52,6 +52,7 @@ const corsOptions = {
       callback(new Error("Not allowed by CORS"));
     }
   },
+  exposedHeaders: ["x-rtb-fingerprint-id"], // ← Add this
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
