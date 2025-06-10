@@ -375,7 +375,6 @@ export const verifyPayment = async (req, res) => {
     const donation = await Donation.findById(donation_id)
       .populate("donation_campaign_id")
       .populate("user_id");
-
     if (!donation) {
       return res.status(404).json({
         status: false,
@@ -1256,18 +1255,21 @@ export const downloadDonationReceipt = async (req, res) => {
 
     // Generate PDF using Puppeteer
     // const browser = await puppeteer.launch({ headless: "new" });
+    // const browser = await puppeteer.launch({
+    //   headless: "new", // or true
+    //   // args: [
+    //   //   "--no-sandbox",
+    //   //   "--disable-setuid-sandbox",
+    //   //   "--disable-dev-shm-usage",
+    //   //   "--disable-accelerated-2d-canvas",
+    //   //   "--no-first-run",
+    //   //   "--no-zygote",
+    //   //   "--single-process", // optional for some hosts
+    //   //   "--disable-gpu",
+    //   // ],
+    //   args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    // });
     const browser = await puppeteer.launch({
-      headless: "new", // or true
-      // args: [
-      //   "--no-sandbox",
-      //   "--disable-setuid-sandbox",
-      //   "--disable-dev-shm-usage",
-      //   "--disable-accelerated-2d-canvas",
-      //   "--no-first-run",
-      //   "--no-zygote",
-      //   "--single-process", // optional for some hosts
-      //   "--disable-gpu",
-      // ],
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
