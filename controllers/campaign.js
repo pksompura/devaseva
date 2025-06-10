@@ -15,7 +15,8 @@ import Category from "../models/donationCategory.js";
 import Donation from "../models/donation.js";
 import mongoose from "mongoose";
 import fs from "fs/promises";
-import fsSync from "fs"; // for sync functions like existsSync
+import fsSync from "fs";
+// import fsPromises from "fs/promises"; // if you need async methods like await fsPromises.rm
 import path from "path";
 import generateReceiptPDF from "../utils/generateReceiptPDF.js"; // Adjust path as needed
 import upload from "../utils/multerConfig.js";
@@ -1056,8 +1057,8 @@ export const deleteDonationCampaign = async (req, res) => {
     // Delete main picture if exists
     if (campaign.main_picture && campaign.main_picture.startsWith("/images/")) {
       const mainPicPath = path.resolve(`.${campaign.main_picture}`);
-      if (fs.existsSync(mainPicPath)) {
-        fs.unlink(mainPicPath, (err) => {
+      if (fsSync.existsSync(mainPicPath)) {
+        fsSync.unlinkSync(mainPicPath, (err) => {
           if (err) console.error("Failed to delete main picture:", err);
         });
       }
@@ -1068,8 +1069,8 @@ export const deleteDonationCampaign = async (req, res) => {
       for (const pic of campaign.other_pictures) {
         if (pic.startsWith("/images/")) {
           const picPath = path.resolve(`.${pic}`);
-          if (fs.existsSync(picPath)) {
-            fs.unlink(picPath, (err) => {
+          if (fsSync.existsSync(picPath)) {
+            fsSync.unlinkSync(picPath, (err) => {
               if (err) console.error("Failed to delete other picture:", err);
             });
           }
@@ -1083,8 +1084,8 @@ export const deleteDonationCampaign = async (req, res) => {
       "campaign_images",
       `campaign_${id}`
     );
-    if (fs.existsSync(campaignFolder)) {
-      fs.rmSync(campaignFolder, { recursive: true, force: true });
+    if (fsSync.existsSync(campaignFolder)) {
+      fsSync.rmSync(campaignFolder, { recursive: true, force: true });
     }
 
     // Delete campaign from DB

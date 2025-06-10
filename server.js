@@ -44,7 +44,6 @@ const allowedOrigins = [
 // };
 const corsOptions = {
   origin: function (origin, callback) {
-    console.log("🌐 Request Origin:", origin);
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -52,9 +51,10 @@ const corsOptions = {
       callback(new Error("Not allowed by CORS"));
     }
   },
-  exposedHeaders: ["x-rtb-fingerprint-id"], // ← Add this
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
+  exposedHeaders: ["x-rtb-fingerprint-id"], // ← Add this
+
   credentials: true,
   optionsSuccessStatus: 200,
 };
