@@ -345,7 +345,8 @@ export const createOrder = async (req, res) => {
 // };
 
 export const verifyPayment = async (req, res) => {
-  const { razorpay_payment_id, transaction_id } = req.body;
+  const { razorpay_payment_id, donation_id } = req.body;
+
   console.log("RAZORPAY_KEY_ID:", process.env.RAZORPAY_KEY_ID);
   console.log("RAZORPAY_SECRET:", process.env.RAZORPAY_SECRET);
 
@@ -370,8 +371,8 @@ export const verifyPayment = async (req, res) => {
       });
     }
 
-    // 2. Find Donation
-    const donation = await Donation.findOne({ transaction_id })
+    // 2. Find Donation (Fix: use donation_id instead of transaction_id)
+    const donation = await Donation.findById(donation_id)
       .populate("donation_campaign_id")
       .populate("user_id");
 
@@ -417,7 +418,7 @@ export const verifyPayment = async (req, res) => {
     donation.receipt_url = `/receipts/${receiptFileName}`;
     await donation.save();
 
-    // 7. Send Donation Email with Attachment
+    // 7. Send Email with receipt
     await sendDonationReceipt(
       donation.user_id.email,
       donation.user_id.name || donation.user_id.full_name,
