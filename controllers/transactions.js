@@ -1270,8 +1270,6 @@ export const downloadDonationReceipt = async (req, res) => {
     //   args: ["--no-sandbox", "--disable-setuid-sandbox"],
     // });
     const browser = await puppeteer.launch({
-      executablePath:
-        "/root/.cache/puppeteer/chrome/linux-137.0.7151.55/chrome-linux64/chrome",
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
