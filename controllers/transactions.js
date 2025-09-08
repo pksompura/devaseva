@@ -3,8 +3,8 @@ import crypto from "crypto";
 import axios from "axios";
 import cron from "node-cron";
 // import DonationCampaign from '../models/DonationCampaign.js';
-import "dotenv/config";
-// require("dotenv").config();
+import dotenv from "dotenv";
+dotenv.config(); // Ensure this is at the top of the file
 
 import Donation from "../models/donation.js";
 import DonationCampaign from "../models/donationCampaign.js";
@@ -88,7 +88,6 @@ const razorpayInstance = new Razorpay({
 //   };
 //   await transporter.sendMail(mailOptions);
 // };
-
 const sendDonationReceipt = async (
   email,
   donorName,
@@ -98,22 +97,35 @@ const sendDonationReceipt = async (
   notes,
   receiptPath // Absolute path to PDF
 ) => {
+  // console.log("SMTP Configuration:", {
+  //   host: process.env.SMTP_HOST,
+  //   port: process.env.SMTP_PORT,
+  //   user: process.env.SMTP_USER,
+  // });
+
   const transporter = nodemailer.createTransport({
-    host: "smtp.hostinger.com",
-    port: 465,
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT),
     secure: true,
     auth: {
-      user: "aschandan88@algotradingelite.com",
-      pass: "Chandu@8861151876", // Environment variables are better here
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
     },
     tls: {
       rejectUnauthorized: false,
       minVersion: "TLSv1.2",
     },
   });
+  // transporter.verify(function (error, success) {
+  //   if (error) {
+  //     console.log("Connection error:", error);
+  //   } else {
+  //     console.log("Server is ready to take our messages");
+  //   }
+  // });
 
   const mailOptions = {
-    from: `"Giveaze Foundation" <aschandan88@algotradingelite.com>`,
+    from: `"Giveaze Foundation" <${process.env.SMTP_USER}>`,
     to: email,
     subject: "Giveaze Foundation - Donation Receipt",
     html: `<!DOCTYPE html>
@@ -1201,6 +1213,90 @@ cron.schedule("*/5 * * * *", async () => {
 //   }
 // };
 
+// export const downloadDonationReceipt = async (req, res) => {
+//   const { donation_id } = req.query;
+
+//   if (!donation_id) {
+//     return res.status(400).json({ message: "Donation ID is required" });
+//   }
+
+//   try {
+//     const donation = await Donation.findById(donation_id);
+//     if (!donation)
+//       return res.status(404).json({ message: "Donation not found" });
+
+//     const user = await User.findById(donation.user_id);
+//     const campaign = await DonationCampaign.findById(
+//       donation.donation_campaign_id
+//     );
+
+//     const donorName = user?.name || "Donor";
+//     const donationDate = new Date(donation.createdAt).toLocaleDateString(
+//       "en-IN"
+//     );
+//     const transactionId = donation.transaction_id;
+//     const amount = parseFloat(donation.total_amount.toString()).toFixed(2);
+//     const notes = donation.notes || "";
+//     const campaignName = campaign?.title || "Donation Campaign";
+
+//     const html = `
+//       <!DOCTYPE html>
+//       <html>
+//         <head>
+//           <meta charset="utf-8">
+//           <title>Donation Receipt</title>
+//           <style>
+//             body { font-family: Arial; padding: 20px; background: #f9f9f9; }
+//             .container { background: #fff; padding: 20px; border-radius: 10px; max-width: 600px; margin: auto; }
+//             h1 { color: #333; }
+//           </style>
+//         </head>
+//         <body>
+//           <div class="container">
+//             <h1>Donation Receipt</h1>
+//             <p><strong>Donor Name:</strong> ${donorName}</p>
+//             <p><strong>Date:</strong> ${donationDate}</p>
+//             <p><strong>Transaction ID:</strong> ${transactionId}</p>
+//             <p><strong>Amount:</strong> ₹${amount}</p>
+//             <p><strong>Campaign:</strong> ${campaignName}</p>
+//             <p><strong>Notes:</strong> ${notes}</p>
+//           </div>
+//         </body>
+//       </html>
+//     `;
+
+//     // Generate PDF using Puppeteer
+//     // const browser = await puppeteer.launch({ headless: "new" });
+//     // const browser = await puppeteer.launch({
+//     //   headless: "new", // or true
+//     //   // args: [
+//     //   //   "--no-sandbox",
+//     //   //   "--disable-setuid-sandbox",
+//     //   //   "--disable-dev-shm-usage",
+//     //   //   "--disable-accelerated-2d-canvas",
+//     //   //   "--no-first-run",
+//     //   //   "--no-zygote",
+//     //   //   "--single-process", // optional for some hosts
+//     //   //   "--disable-gpu",
+//     //   // ],
+//     //   args: ["--no-sandbox", "--disable-setuid-sandbox"],
+//     // });
+//     const browser = await puppeteer.launch({
+//       args: ["--no-sandbox", "--disable-setuid-sandbox"],
+//     });
+
+//     const page = await browser.newPage();
+//     await page.setContent(html);
+//     const pdfBuffer = await page.pdf({ format: "A4" });
+//     await browser.close();
+
+//     // Send the buffer in base64 so frontend can convert to Blob
+//     res.json({ pdf: pdfBuffer.toString("base64") });
+//   } catch (error) {
+//     console.error("Error generating receipt PDF:", error);
+//     res.status(500).json({ message: "Error generating PDF" });
+//   }
+// };
 export const downloadDonationReceipt = async (req, res) => {
   const { donation_id } = req.query;
 
@@ -1231,7 +1327,7 @@ export const downloadDonationReceipt = async (req, res) => {
       <!DOCTYPE html>
       <html>
         <head>
-          <meta charset="utf-8">
+          <meta charset="utf-8" />
           <title>Donation Receipt</title>
           <style>
             body { font-family: Arial; padding: 20px; background: #f9f9f9; }
@@ -1253,22 +1349,6 @@ export const downloadDonationReceipt = async (req, res) => {
       </html>
     `;
 
-    // Generate PDF using Puppeteer
-    // const browser = await puppeteer.launch({ headless: "new" });
-    // const browser = await puppeteer.launch({
-    //   headless: "new", // or true
-    //   // args: [
-    //   //   "--no-sandbox",
-    //   //   "--disable-setuid-sandbox",
-    //   //   "--disable-dev-shm-usage",
-    //   //   "--disable-accelerated-2d-canvas",
-    //   //   "--no-first-run",
-    //   //   "--no-zygote",
-    //   //   "--single-process", // optional for some hosts
-    //   //   "--disable-gpu",
-    //   // ],
-    //   args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    // });
     const browser = await puppeteer.launch({
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
@@ -1278,8 +1358,12 @@ export const downloadDonationReceipt = async (req, res) => {
     const pdfBuffer = await page.pdf({ format: "A4" });
     await browser.close();
 
-    // Send the buffer in base64 so frontend can convert to Blob
-    res.json({ pdf: pdfBuffer.toString("base64") });
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="donation-receipt-${transactionId}.pdf"`,
+    });
+
+    res.send(pdfBuffer);
   } catch (error) {
     console.error("Error generating receipt PDF:", error);
     res.status(500).json({ message: "Error generating PDF" });
