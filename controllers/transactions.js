@@ -1352,21 +1352,15 @@ export const downloadDonationReceipt = async (req, res) => {
     // const browser = await puppeteer.launch({
     //   args: ["--no-sandbox", "--disable-setuid-sandbox"],
     // });
-
     const browser = await puppeteer.launch({
+      executablePath: "/usr/bin/chromium-browser", // <- system path
       headless: true,
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
-        "--disable-accelerated-2d-canvas",
-        "--no-first-run",
-        "--no-zygote",
-        "--single-process",
-        "--disable-gpu",
       ],
     });
-
     const page = await browser.newPage();
     await page.setContent(html);
     const pdfBuffer = await page.pdf({ format: "A4" });
