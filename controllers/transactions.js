@@ -13,6 +13,7 @@ import path, { dirname } from "path";
 import { createObjectCsvStringifier, createObjectCsvWriter } from "csv-writer";
 import User from "../models/users.js";
 import os from "os";
+import html_to_pdf from 'html-pdf-node';
 import fs from "fs";
 import { fileURLToPath } from "url";
 import puppeteer from "puppeteer";
@@ -1430,8 +1431,6 @@ export const downloadDonationReceipt = async (req, res) => {
       executablePath: "/usr/bin/chromium-browser", // Ensure this path is correct for your VPS
       headless: true,
       args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
         "--disable-gpu",
       ],

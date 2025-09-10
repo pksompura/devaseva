@@ -26,6 +26,7 @@
     "firebase": "^10.13.1",
     "firebase-admin": "^12.7.0",
     "html-pdf": "^3.0.1",
+    "html-pdf-node": "^1.0.8",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.19.0",
     "mongoose": "^8.5.1",
