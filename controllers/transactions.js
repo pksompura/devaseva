@@ -1297,6 +1297,82 @@ cron.schedule("*/5 * * * *", async () => {
 //     res.status(500).json({ message: "Error generating PDF" });
 //   }
 // };
+// export const downloadDonationReceipt = async (req, res) => {
+//   const { donation_id } = req.query;
+
+//   if (!donation_id) {
+//     return res.status(400).json({ message: "Donation ID is required" });
+//   }
+
+//   try {
+//     const donation = await Donation.findById(donation_id);
+//     if (!donation)
+//       return res.status(404).json({ message: "Donation not found" });
+
+//     const user = await User.findById(donation.user_id);
+//     const campaign = await DonationCampaign.findById(
+//       donation.donation_campaign_id
+//     );
+
+//     const donorName = user?.name || "Donor";
+//     const donationDate = new Date(donation.createdAt).toLocaleDateString(
+//       "en-IN"
+//     );
+//     const transactionId = donation.transaction_id;
+//     const amount = parseFloat(donation.total_amount.toString()).toFixed(2);
+//     const notes = donation.notes || "";
+//     const campaignName = campaign?.title || "Donation Campaign";
+
+//     const html = `
+//       <!DOCTYPE html>
+//       <html>
+//         <head>
+//           <meta charset="utf-8" />
+//           <title>Donation Receipt</title>
+//           <style>
+//             body { font-family: Arial; padding: 20px; background: #f9f9f9; }
+//             .container { background: #fff; padding: 20px; border-radius: 10px; max-width: 600px; margin: auto; }
+//             h1 { color: #333; }
+//           </style>
+//         </head>
+//         <body>
+//           <div class="container">
+//             <h1>Donation Receipt</h1>
+//             <p><strong>Donor Name:</strong> ${donorName}</p>
+//             <p><strong>Date:</strong> ${donationDate}</p>
+//             <p><strong>Transaction ID:</strong> ${transactionId}</p>
+//             <p><strong>Amount:</strong> ₹${amount}</p>
+//             <p><strong>Campaign:</strong> ${campaignName}</p>
+//             <p><strong>Notes:</strong> ${notes}</p>
+//           </div>
+//         </body>
+//       </html>
+//     `;
+//     const browser = await puppeteer.launch({
+//       executablePath: "/usr/bin/chromium-browser", // <- system path
+//       headless: true,
+//       args: [
+//         "--no-sandbox",
+//         "--disable-setuid-sandbox",
+//         "--disable-dev-shm-usage",
+//       ],
+//     });
+//     const page = await browser.newPage();
+//     await page.setContent(html);
+//     const pdfBuffer = await page.pdf({ format: "A4" });
+//     await browser.close();
+
+//     res.set({
+//       "Content-Type": "application/pdf",
+//       "Content-Disposition": `attachment; filename="donation-receipt-${transactionId}.pdf"`,
+//     });
+
+//     res.send(pdfBuffer);
+//   } catch (error) {
+//     console.error("Error generating receipt PDF:", error);
+//     res.status(500).json({ message: "Error generating PDF" });
+//   }
+// };
 export const downloadDonationReceipt = async (req, res) => {
   const { donation_id } = req.query;
 
@@ -1349,21 +1425,25 @@ export const downloadDonationReceipt = async (req, res) => {
       </html>
     `;
 
-    // const browser = await puppeteer.launch({
-    //   args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    // });
+    // Puppeteer launch configuration for root access with --no-sandbox
     const browser = await puppeteer.launch({
-      executablePath: "/usr/bin/chromium-browser", // <- system path
+      executablePath: "/usr/bin/chromium-browser", // Ensure this path is correct for your VPS
       headless: true,
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
+        "--disable-gpu",
       ],
     });
+
     const page = await browser.newPage();
-    await page.setContent(html);
-    const pdfBuffer = await page.pdf({ format: "A4" });
+    await page.setContent(html, { waitUntil: "networkidle0" }); // Ensure full content is loaded
+    const pdfBuffer = await page.pdf({
+      format: "A4",
+      printBackground: true, // Print CSS backgrounds
+    });
+
     await browser.close();
 
     res.set({
