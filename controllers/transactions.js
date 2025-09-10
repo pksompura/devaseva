@@ -16,8 +16,8 @@ import os from "os";
 import html_to_pdf from "html-pdf-node";
 import fs from "fs";
 import { fileURLToPath } from "url";
-import puppeteer from "puppeteer";
-import pdf from "html-pdf"; // or use puppeteer if you're using that
+// import puppeteer from "puppeteer";
+// import pdf from "html-pdf"; // or use puppeteer if you're using that
 import ExcelJS from "exceljs";
 import Decimal128 from "mongodb";
 import generateReceiptPDF from "../utils/generateReceiptPDF.js";
