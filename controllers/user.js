@@ -171,8 +171,6 @@ export const verifyOTP = async (req, res) => {
 
   try {
     const user = await User.findOne({ mobile_number, otp });
-    console.log(user);
-
     if (!user) {
       return res.status(400).json({ error: "Invalid OTP" });
     }
@@ -203,14 +201,34 @@ export const verifyOTP = async (req, res) => {
       vendor: device.device?.brand || "Unknown",
     };
 
-    // IP address & location (via ipwho.is, no API key)
-    const ipAddress =
-      req.headers["x-forwarded-for"]?.split(",")[0] ||
-      req.connection?.remoteAddress ||
-      req.socket?.remoteAddress ||
-      "Unknown";
-    let location = "Unknown";
+    // // IP address & location (via ipwho.is, no API key)
+    // const ipAddress =
+    //   req.headers["x-forwarded-for"]?.split(",")[0] ||
+    //   req.connection?.remoteAddress ||
+    //   req.socket?.remoteAddress ||
+    //   "Unknown";
+    // let location = "Unknown";
 
+    // try {
+    //   const geoResponse = await axios.get(`https://ipwho.is/${ipAddress}`);
+    //   if (geoResponse.data && geoResponse.data.success) {
+    //     location = `${geoResponse.data.city}, ${geoResponse.data.region}, ${geoResponse.data.country}`;
+    //   }
+    // } catch (geoErr) {
+    //   console.warn("Geolocation error:", geoErr.message);
+    // }
+
+    // Extract IP address
+    const forwarded = req.headers["x-forwarded-for"];
+    let ipAddress = forwarded
+      ? forwarded.split(",")[0].trim()
+      : req.connection?.remoteAddress || req.socket?.remoteAddress || "Unknown";
+
+    // Clean IPv6 prefix if present
+    ipAddress = ipAddress.replace(/^::ffff:/, "");
+
+    // Fetch geolocation
+    let location = "Unknown";
     try {
       const geoResponse = await axios.get(`https://ipwho.is/${ipAddress}`);
       if (geoResponse.data && geoResponse.data.success) {
@@ -219,6 +237,7 @@ export const verifyOTP = async (req, res) => {
     } catch (geoErr) {
       console.warn("Geolocation error:", geoErr.message);
     }
+
     // Log the login activity
     const loginLog = new LoginLog({
       userId: user._id,
@@ -449,30 +468,66 @@ export const blockUser = async (req, res) => {
 //   res.status(200).json({ message: "Logged out successfully" });
 // };
 
+// export const logout = async (req, res) => {
+//   try {
+//     const authHeader = req.headers.authorization;
+//     if (!authHeader)
+//       return res.status(401).json({ error: "No token provided" });
+
+//     const token = authHeader.split(" ")[1];
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET || "praveen1");
+
+//     tokenBlacklist.push(token); // If you're using blacklist
+
+//     // Update logout time in latest login record
+//     const latestLogin = await LoginLog.findOne({ userId: decoded.id }).sort({
+//       loginAt: -1,
+//     });
+//     if (latestLogin && !latestLogin.logoutAt) {
+//       latestLogin.logoutAt = new Date();
+//       await latestLogin.save();
+//     }
+
+//     res.status(200).json({ message: "Logged out successfully" });
+//   } catch (error) {
+//     console.error("Logout error:", error);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// };
+
 export const logout = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader)
+    if (!authHeader) {
       return res.status(401).json({ error: "No token provided" });
+    }
 
     const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "praveen1");
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET || "praveen1");
+    } catch (verifyError) {
+      return res.status(401).json({ error: "Invalid or expired token" });
+    }
 
-    tokenBlacklist.push(token); // If you're using blacklist
+    // Add token to blacklist if implemented
+    tokenBlacklist.push(token);
 
-    // Update logout time in latest login record
-    const latestLogin = await LoginLog.findOne({ userId: decoded.id }).sort({
-      loginAt: -1,
-    });
-    if (latestLogin && !latestLogin.logoutAt) {
+    // Find the latest login record and update logout time
+    const latestLogin = await LoginLog.findOne({
+      userId: decoded.id,
+      logoutAt: null, // Only open sessions
+    }).sort({ loginAt: -1 });
+
+    if (latestLogin) {
       latestLogin.logoutAt = new Date();
       await latestLogin.save();
     }
 
-    res.status(200).json({ message: "Logged out successfully" });
+    return res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     console.error("Logout error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
