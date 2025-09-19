@@ -223,41 +223,233 @@ const sendDonationReceipt = async (
 //   }
 // };
 
+// export const createOrder = async (req, res) => {
+//   const {
+//     clientIp,
+//     deviceInfo,
+//     browserType,
+//     amount,
+//     user_id,
+//     donation_campaign_id,
+//     payment_method,
+//     notes,
+//     is_anonymous,
+//     pan_number,
+//     full_address,
+//   } = req.body;
+
+//   if (!amount || !user_id || !donation_campaign_id) {
+//     return res
+//       .status(400)
+//       .json({ message: "All required fields must be provided!" });
+//   }
+
+//   try {
+//     const options = {
+//       amount: Number(amount * 100), // amount in paise
+//       currency: "INR",
+//       receipt: crypto.randomBytes(10).toString("hex"),
+//     };
+
+//     const order = await razorpayInstance.orders.create(options);
+
+//     const donation = new Donation({
+//       total_amount: amount,
+//       donation_campaign_id,
+//       transaction_id: order.id, // Razorpay ORDER ID (stored safely)
+//       user_id,
+//       payment_status: "pending",
+//       currency: "INR",
+//       ip_address: clientIp,
+//       device_info: deviceInfo,
+//       browser_type: browserType,
+//       notes: notes || "",
+//       is_anonymous: is_anonymous || false,
+//       pan_number: pan_number || undefined,
+//       full_address: full_address || undefined,
+//       paid: false, // Set to false, will update after verification
+//     });
+
+//     await donation.save();
+
+//     res.status(200).json({
+//       success: true,
+//       data: order,
+//       donation_id: donation._id,
+//     });
+//   } catch (error) {
+//     console.error("Error creating order:", error);
+//     res.status(500).json({ message: "Internal Server Error!" });
+//   }
+// };
+
+// export const createOrder = async (req, res) => {
+//   try {
+//     const {
+//       clientIp,
+//       deviceInfo,
+//       browserType,
+//       amount,
+//       user_id,
+//       donation_campaign_id,
+//       payment_method,
+//       notes,
+//       is_anonymous,
+//       pan_number,
+//       full_address,
+//       full_name,
+//       email,
+//       mobile_number,
+//     } = req.body;
+
+//     // 🔹 Validate campaign & amount
+//     if (!amount || !donation_campaign_id) {
+//       return res
+//         .status(400)
+//         .json({ message: "Donation amount and campaign are required!" });
+//     }
+
+//     let finalUserId = user_id;
+
+//     // 🔹 If no user_id → Guest Flow
+//     if (!finalUserId) {
+//       if (!full_name || !email || !mobile_number) {
+//         return res.status(400).json({
+//           message:
+//             "Guest donors must provide full_name, email, and mobile_number!",
+//         });
+//       }
+
+//       // Check if donor already exists (by mobile or email)
+//       let existingUser = await User.findOne({
+//         $or: [{ mobile_number }, { email }],
+//       });
+
+//       if (!existingUser) {
+//         // Create new guest donor
+//         existingUser = new User({
+//           full_name,
+//           email,
+//           mobile_number,
+//         });
+//         await existingUser.save();
+//       }
+
+//       finalUserId = existingUser._id;
+//     }
+
+//     // 🔹 Create Razorpay order
+//     const options = {
+//       amount: Number(amount * 100), // in paise
+//       currency: "INR",
+//       receipt: crypto.randomBytes(10).toString("hex"),
+//     };
+
+//     const order = await razorpayInstance.orders.create(options);
+
+//     // 🔹 Save donation entry
+//     const donation = new Donation({
+//       total_amount: amount,
+//       donation_campaign_id,
+//       transaction_id: order.id, // store Razorpay order ID
+//       user_id: finalUserId,
+//       payment_status: "pending",
+//       currency: "INR",
+//       ip_address: clientIp,
+//       device_info: deviceInfo,
+//       browser_type: browserType,
+//       notes: notes || "",
+//       is_anonymous: is_anonymous || false,
+//       pan_number: pan_number || undefined,
+//       full_address: full_address || undefined,
+//       paid: false,
+//     });
+
+//     await donation.save();
+
+//     return res.status(200).json({
+//       success: true,
+//       data: order,
+//       donation_id: donation._id,
+//     });
+//   } catch (error) {
+//     console.error("Error creating order:", error);
+//     return res.status(500).json({ message: "Internal Server Error!" });
+//   }
+// };
 export const createOrder = async (req, res) => {
-  const {
-    clientIp,
-    deviceInfo,
-    browserType,
-    amount,
-    user_id,
-    donation_campaign_id,
-    payment_method,
-    notes,
-    is_anonymous,
-    pan_number,
-    full_address,
-  } = req.body;
-
-  if (!amount || !user_id || !donation_campaign_id) {
-    return res
-      .status(400)
-      .json({ message: "All required fields must be provided!" });
-  }
-
   try {
+    const {
+      clientIp,
+      deviceInfo,
+      browserType,
+      amount,
+      user_id,
+      donation_campaign_id,
+      payment_method,
+      notes,
+      is_anonymous,
+      pan_number,
+      full_address,
+      full_name,
+      email,
+      mobile_number,
+    } = req.body;
+
+    if (!amount || !donation_campaign_id) {
+      return res
+        .status(400)
+        .json({ message: "Donation amount and campaign are required!" });
+    }
+
+    let finalUserId = user_id;
+    let donorFullName = "Anonymous Donor";
+
+    // 🔹 Guest donor flow
+    if (!finalUserId) {
+      if (!full_name || !email || !mobile_number) {
+        return res.status(400).json({
+          message:
+            "Guest donors must provide full_name, email, and mobile_number!",
+        });
+      }
+
+      let existingUser = await User.findOne({
+        $or: [{ mobile_number }, { email }],
+      });
+
+      if (!existingUser) {
+        existingUser = new User({
+          full_name,
+          email,
+          mobile_number,
+        });
+        await existingUser.save();
+      }
+
+      finalUserId = existingUser._id;
+      donorFullName = existingUser.full_name;
+    } else {
+      // 🔹 Registered user flow
+      const user = await User.findById(finalUserId).lean();
+      donorFullName = user?.full_name || "Anonymous Donor";
+    }
+
+    // 🔹 Create Razorpay order
     const options = {
-      amount: Number(amount * 100), // amount in paise
+      amount: Number(amount * 100), // in paise
       currency: "INR",
       receipt: crypto.randomBytes(10).toString("hex"),
     };
 
     const order = await razorpayInstance.orders.create(options);
 
+    // 🔹 Save donation
     const donation = new Donation({
       total_amount: amount,
       donation_campaign_id,
-      transaction_id: order.id, // Razorpay ORDER ID (stored safely)
-      user_id,
+      transaction_id: order.id,
+      user_id: finalUserId,
       payment_status: "pending",
       currency: "INR",
       ip_address: clientIp,
@@ -267,19 +459,22 @@ export const createOrder = async (req, res) => {
       is_anonymous: is_anonymous || false,
       pan_number: pan_number || undefined,
       full_address: full_address || undefined,
-      paid: false, // Set to false, will update after verification
+      paid: false,
+      donor_name: donorFullName, // ✅ save donor name flat
     });
 
     await donation.save();
 
-    res.status(200).json({
+    // ✅ Flat response (no nested donor object)
+    return res.status(200).json({
       success: true,
       data: order,
       donation_id: donation._id,
+      donor_name: donorFullName, // 🔑 directly include donor_name
     });
   } catch (error) {
     console.error("Error creating order:", error);
-    res.status(500).json({ message: "Internal Server Error!" });
+    return res.status(500).json({ message: "Internal Server Error!" });
   }
 };
 
@@ -357,14 +552,110 @@ export const createOrder = async (req, res) => {
 //   }
 // };
 
+// export const verifyPayment = async (req, res) => {
+//   const { razorpay_payment_id, donation_id } = req.body;
+
+//   console.log("RAZORPAY_KEY_ID:", process.env.RAZORPAY_KEY_ID);
+//   console.log("RAZORPAY_SECRET:", process.env.RAZORPAY_SECRET);
+
+//   try {
+//     // 1. Verify with Razorpay
+//     const razorpayResponse = await axios.get(
+//       `https://api.razorpay.com/v1/payments/${razorpay_payment_id}`,
+//       {
+//         auth: {
+//           username: process.env.RAZORPAY_KEY_ID,
+//           password: process.env.RAZORPAY_SECRET,
+//         },
+//       }
+//     );
+
+//     const paymentDetails = razorpayResponse.data;
+
+//     if (paymentDetails.status !== "captured") {
+//       return res.status(400).json({
+//         status: false,
+//         message: "Payment not successful!",
+//       });
+//     }
+
+//     // 2. Find Donation (Fix: use donation_id instead of transaction_id)
+//     const donation = await Donation.findById(donation_id)
+//       .populate("donation_campaign_id")
+//       .populate("user_id");
+//     if (!donation) {
+//       return res.status(404).json({
+//         status: false,
+//         message: "Donation not found!",
+//       });
+//     }
+
+//     // 3. Update Donation
+//     donation.payment_status = "successful";
+//     donation.paid = true;
+//     donation.transaction_id = razorpay_payment_id;
+//     await donation.save();
+
+//     // 4. Update Campaign Raised Amount
+//     const campaign = donation.donation_campaign_id;
+//     if (!campaign) {
+//       return res.status(404).json({
+//         status: false,
+//         message: "Donation campaign not found!",
+//       });
+//     }
+
+//     const currentRaised = campaign.raised_amount
+//       ? parseFloat(campaign.raised_amount.toString())
+//       : 0;
+//     const updatedRaised =
+//       currentRaised + parseFloat(donation.total_amount.toString());
+//     campaign.raised_amount = updatedRaised;
+//     await campaign.save();
+
+//     // 5. Generate Receipt PDF
+//     const receiptFileName = `receipt_${donation.transaction_id}.pdf`;
+//     const receiptPath = await generateReceiptPDF(
+//       donation,
+//       donation.user_id,
+//       receiptFileName
+//     );
+
+//     // 6. Save receipt path
+//     donation.receipt_url = `/receipts/${receiptFileName}`;
+//     await donation.save();
+
+//     // 7. Send Email with receipt
+//     await sendDonationReceipt(
+//       donation.user_id.email,
+//       donation.user_id.name || donation.user_id.full_name,
+//       new Date().toLocaleString(),
+//       donation.total_amount,
+//       razorpay_payment_id,
+//       donation.notes || "",
+//       receiptPath
+//     );
+
+//     // 8. Response
+//     return res.status(200).json({
+//       status: true,
+//       message: "Payment Verified and Donation Updated Successfully",
+//       donation,
+//       receipt_url: donation.receipt_url,
+//     });
+//   } catch (error) {
+//     console.error("Payment Verification Error:", error);
+//     return res.status(500).json({
+//       status: false,
+//       message: "Internal Server Error!",
+//     });
+//   }
+// };
 export const verifyPayment = async (req, res) => {
   const { razorpay_payment_id, donation_id } = req.body;
 
-  console.log("RAZORPAY_KEY_ID:", process.env.RAZORPAY_KEY_ID);
-  console.log("RAZORPAY_SECRET:", process.env.RAZORPAY_SECRET);
-
   try {
-    // 1. Verify with Razorpay
+    // 1. Verify payment with Razorpay
     const razorpayResponse = await axios.get(
       `https://api.razorpay.com/v1/payments/${razorpay_payment_id}`,
       {
@@ -376,7 +667,6 @@ export const verifyPayment = async (req, res) => {
     );
 
     const paymentDetails = razorpayResponse.data;
-
     if (paymentDetails.status !== "captured") {
       return res.status(400).json({
         status: false,
@@ -384,10 +674,11 @@ export const verifyPayment = async (req, res) => {
       });
     }
 
-    // 2. Find Donation (Fix: use donation_id instead of transaction_id)
+    // 2. Find donation entry
     const donation = await Donation.findById(donation_id)
       .populate("donation_campaign_id")
       .populate("user_id");
+
     if (!donation) {
       return res.status(404).json({
         status: false,
@@ -395,45 +686,38 @@ export const verifyPayment = async (req, res) => {
       });
     }
 
-    // 3. Update Donation
+    // 3. Update donation
     donation.payment_status = "successful";
     donation.paid = true;
-    donation.transaction_id = razorpay_payment_id;
+    donation.transaction_id = razorpay_payment_id; // now Razorpay payment id
     await donation.save();
 
-    // 4. Update Campaign Raised Amount
+    // 4. Update campaign raised amount
     const campaign = donation.donation_campaign_id;
-    if (!campaign) {
-      return res.status(404).json({
-        status: false,
-        message: "Donation campaign not found!",
-      });
+    if (campaign) {
+      const currentRaised = campaign.raised_amount
+        ? parseFloat(campaign.raised_amount.toString())
+        : 0;
+      campaign.raised_amount =
+        currentRaised + parseFloat(donation.total_amount.toString());
+      await campaign.save();
     }
 
-    const currentRaised = campaign.raised_amount
-      ? parseFloat(campaign.raised_amount.toString())
-      : 0;
-    const updatedRaised =
-      currentRaised + parseFloat(donation.total_amount.toString());
-    campaign.raised_amount = updatedRaised;
-    await campaign.save();
-
-    // 5. Generate Receipt PDF
-    const receiptFileName = `receipt_${donation.transaction_id}.pdf`;
+    // 5. Generate receipt
+    const receiptFileName = `receipt_${donation._id}.pdf`;
     const receiptPath = await generateReceiptPDF(
       donation,
       donation.user_id,
       receiptFileName
     );
 
-    // 6. Save receipt path
     donation.receipt_url = `/receipts/${receiptFileName}`;
     await donation.save();
 
-    // 7. Send Email with receipt
+    // 6. Send email
     await sendDonationReceipt(
       donation.user_id.email,
-      donation.user_id.name || donation.user_id.full_name,
+      donation.user_id.full_name || donation.user_id.name,
       new Date().toLocaleString(),
       donation.total_amount,
       razorpay_payment_id,
@@ -441,7 +725,6 @@ export const verifyPayment = async (req, res) => {
       receiptPath
     );
 
-    // 8. Response
     return res.status(200).json({
       status: true,
       message: "Payment Verified and Donation Updated Successfully",

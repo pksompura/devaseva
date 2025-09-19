@@ -160,6 +160,7 @@ export const sendOTP = async (req, res) => {
 //     res.status(500).json({ error: "Internal server error" });
 //   }
 // };
+
 export const verifyOTP = async (req, res) => {
   const { mobile_number, otp } = req.body;
 
@@ -183,13 +184,14 @@ export const verifyOTP = async (req, res) => {
 
     user.otp = null; // Clear OTP on success
     await user.save();
+
     const token = jwt.sign(
       { id: user._id, mobile_number: user.mobile_number, role: user.role },
-      process.env.JWT_SECRET || "praveen1", // move to .env if not already
+      process.env.JWT_SECRET || "praveen1",
       { expiresIn: "1h" }
     );
 
-    // Device info using device-detector-js
+    // Device info
     const deviceDetector = new DeviceDetector();
     const userAgent = req.headers["user-agent"] || "";
     const device = deviceDetector.parse(userAgent);
@@ -201,24 +203,7 @@ export const verifyOTP = async (req, res) => {
       vendor: device.device?.brand || "Unknown",
     };
 
-    // // IP address & location (via ipwho.is, no API key)
-    // const ipAddress =
-    //   req.headers["x-forwarded-for"]?.split(",")[0] ||
-    //   req.connection?.remoteAddress ||
-    //   req.socket?.remoteAddress ||
-    //   "Unknown";
-    // let location = "Unknown";
-
-    // try {
-    //   const geoResponse = await axios.get(`https://ipwho.is/${ipAddress}`);
-    //   if (geoResponse.data && geoResponse.data.success) {
-    //     location = `${geoResponse.data.city}, ${geoResponse.data.region}, ${geoResponse.data.country}`;
-    //   }
-    // } catch (geoErr) {
-    //   console.warn("Geolocation error:", geoErr.message);
-    // }
-
-    // Extract IP address
+    // IP address extraction
     const forwarded = req.headers["x-forwarded-for"];
     let ipAddress = forwarded
       ? forwarded.split(",")[0].trim()
@@ -238,7 +223,7 @@ export const verifyOTP = async (req, res) => {
       console.warn("Geolocation error:", geoErr.message);
     }
 
-    // Log the login activity
+    // Save login log
     const loginLog = new LoginLog({
       userId: user._id,
       ipAddress,
@@ -246,6 +231,7 @@ export const verifyOTP = async (req, res) => {
       deviceInfo,
     });
     await loginLog.save();
+
     return res.status(200).json({
       message: "OTP verified successfully",
       token,
@@ -262,6 +248,108 @@ export const verifyOTP = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+// export const verifyOTP = async (req, res) => {
+//   const { mobile_number, otp } = req.body;
+
+//   if (!mobile_number || !otp) {
+//     return res
+//       .status(400)
+//       .json({ error: "Mobile number and OTP are required" });
+//   }
+
+//   try {
+//     const user = await User.findOne({ mobile_number, otp });
+//     if (!user) {
+//       return res.status(400).json({ error: "Invalid OTP" });
+//     }
+
+//     if (user.isBlocked) {
+//       return res
+//         .status(403)
+//         .json({ error: "Your account is blocked. Contact support." });
+//     }
+
+//     user.otp = null; // Clear OTP on success
+//     await user.save();
+//     const token = jwt.sign(
+//       { id: user._id, mobile_number: user.mobile_number, role: user.role },
+//       process.env.JWT_SECRET || "praveen1", // move to .env if not already
+//       { expiresIn: "1h" }
+//     );
+
+//     // Device info using device-detector-js
+//     const deviceDetector = new DeviceDetector();
+//     const userAgent = req.headers["user-agent"] || "";
+//     const device = deviceDetector.parse(userAgent);
+//     const deviceInfo = {
+//       browser: device.client?.name || "Unknown",
+//       os: device.os?.name || "Unknown",
+//       deviceType: device.device?.type || "Unknown",
+//       model: device.device?.model || "Unknown",
+//       vendor: device.device?.brand || "Unknown",
+//     };
+
+//     // // IP address & location (via ipwho.is, no API key)
+//     // const ipAddress =
+//     //   req.headers["x-forwarded-for"]?.split(",")[0] ||
+//     //   req.connection?.remoteAddress ||
+//     //   req.socket?.remoteAddress ||
+//     //   "Unknown";
+//     // let location = "Unknown";
+
+//     // try {
+//     //   const geoResponse = await axios.get(`https://ipwho.is/${ipAddress}`);
+//     //   if (geoResponse.data && geoResponse.data.success) {
+//     //     location = `${geoResponse.data.city}, ${geoResponse.data.region}, ${geoResponse.data.country}`;
+//     //   }
+//     // } catch (geoErr) {
+//     //   console.warn("Geolocation error:", geoErr.message);
+//     // }
+
+//     // Extract IP address
+//     const forwarded = req.headers["x-forwarded-for"];
+//     let ipAddress = forwarded
+//       ? forwarded.split(",")[0].trim()
+//       : req.connection?.remoteAddress || req.socket?.remoteAddress || "Unknown";
+
+//     // Clean IPv6 prefix if present
+//     ipAddress = ipAddress.replace(/^::ffff:/, "");
+
+//     // Fetch geolocation
+//     let location = "Unknown";
+//     try {
+//       const geoResponse = await axios.get(`https://ipwho.is/${ipAddress}`);
+//       if (geoResponse.data && geoResponse.data.success) {
+//         location = `${geoResponse.data.city}, ${geoResponse.data.region}, ${geoResponse.data.country}`;
+//       }
+//     } catch (geoErr) {
+//       console.warn("Geolocation error:", geoErr.message);
+//     }
+
+//     // Log the login activity
+//     const loginLog = new LoginLog({
+//       userId: user._id,
+//       ipAddress,
+//       location,
+//       deviceInfo,
+//     });
+//     await loginLog.save();
+//     return res.status(200).json({
+//       message: "OTP verified successfully",
+//       token,
+//       user: {
+//         _id: user._id,
+//         full_name: user.full_name,
+//         email: user.email,
+//         mobile_number: user.mobile_number,
+//         role: user.role,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("OTP verification error:", error);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// };
 
 // Register or Login User at the time of Donation
 // export const registerOrLoginUser = async (req, res) => {
