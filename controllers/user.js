@@ -454,6 +454,59 @@ export const registerOrLoginUser = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+export const guestLogin = async (req, res) => {
+  try {
+    const { full_name, email, mobile_number } = req.body;
+
+    if (!full_name || !email || !mobile_number) {
+      return res.status(400).json({
+        error:
+          "Full name, email, and mobile number are required for guest login",
+      });
+    }
+
+    // 🔍 Check if guest already exists (by email or mobile)
+    let user = await User.findOne({
+      $or: [{ email }, { mobile_number }],
+      is_guest: true,
+    });
+
+    if (!user) {
+      user = new User({
+        full_name,
+        email,
+        mobile_number,
+        is_guest: true, // 👈 mark as guest
+        role: "user", // 👈 keep enum valid
+      });
+      await user.save();
+    }
+
+    // 🎟️ Generate JWT token
+    const token = jwt.sign(
+      { id: user._id, role: "user", is_guest: true }, // 👈 embed guest flag
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      success: true,
+      message: "Guest login successful",
+      token,
+      user: {
+        _id: user._id,
+        full_name: user.full_name,
+        email: user.email,
+        mobile_number: user.mobile_number,
+        role: "user",
+        is_guest: true, // 👈 send to frontend
+      },
+    });
+  } catch (err) {
+    console.error("Guest login error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
 
 // Get single user's login history for the last 30 days
 export const getUserWithLoginHistory = async (req, res) => {

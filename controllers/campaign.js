@@ -318,44 +318,127 @@ export const deleteTextEditorImage = async (req, res) => {
 // };
 
 // Create a new donation campaign and send OTP
+// export const createDonationCampaign = async (req, res) => {
+//   try {
+//     const createdBy = req.user.id;
+
+//     const {
+//       main_picture,
+//       other_pictures,
+//       phone_number,
+//       donation_amounts,
+//       ...data
+//     } = req.body;
+
+//     data.created_by = createdBy;
+
+//     // Normalize donation_amounts
+//     if (Array.isArray(donation_amounts)) {
+//       data.donation_amounts = donation_amounts;
+//     } else if (donation_amounts) {
+//       data.donation_amounts = [donation_amounts];
+//     } else {
+//       data.donation_amounts = [];
+//     }
+
+//     const campaignId = uuidv4();
+//     let mainPictureUrl = null;
+//     const imageUrls = [];
+
+//     // Save main picture
+//     if (main_picture && typeof main_picture === "string") {
+//       mainPictureUrl = await uploadImageLocally(
+//         main_picture,
+//         `campaign_${campaignId}`,
+//         "main_picture"
+//       );
+//       data.main_picture = mainPictureUrl;
+//     }
+//     // Save other pictures
+//     if (other_pictures && Array.isArray(other_pictures)) {
+//       for (let i = 0; i < other_pictures.length; i++) {
+//         if (typeof other_pictures[i] === "string") {
+//           const imageUrl = await uploadImageLocally(
+//             other_pictures[i],
+//             `campaign_${campaignId}`,
+//             `other_picture_${i}`
+//           );
+//           imageUrls.push(imageUrl);
+//         }
+//       }
+//       data.other_pictures = imageUrls;
+//     }
+
+//     // Generate and send OTP
+//     const otp = Math.floor(100000 + Math.random() * 900000);
+//     if (phone_number) {
+//       sendOTP(phone_number, otp);
+//     }
+
+//     const campaign = new DonationCampaign(data);
+//     await campaign.save();
+
+//     res.status(200).json({
+//       status: true,
+//       message: "Campaign created successfully and OTP sent to user",
+//       data: campaign,
+//     });
+//   } catch (error) {
+//     console.error("Create campaign error:", error);
+//     res.status(400).json({ error: error.message });
+//   }
+// };
+
 export const createDonationCampaign = async (req, res) => {
   try {
     const createdBy = req.user.id;
+    const userRole = req.user.role; // e.g., "admin" or "fundraiser"
 
     const {
+      campaign_title,
+      short_description,
+      campaign_description,
+      story,
       main_picture,
       other_pictures,
+      beneficiary_type,
+      cause_category,
       phone_number,
+      terms_agreed,
+      target_amount,
+      minimum_amount,
       donation_amounts,
-      ...data
+      video_link,
+      ngo_name,
+      beneficiary,
+      state,
+      category,
     } = req.body;
 
-    data.created_by = createdBy;
-
-    // Normalize donation_amounts
-    if (Array.isArray(donation_amounts)) {
-      data.donation_amounts = donation_amounts;
-    } else if (donation_amounts) {
-      data.donation_amounts = [donation_amounts];
-    } else {
-      data.donation_amounts = [];
+    // ✅ Validate minimum required fields
+    if (!campaign_title || !main_picture || !campaign_description) {
+      return res.status(400).json({
+        status: false,
+        message:
+          "Required fields missing: campaign_title, campaign_description, main_picture",
+      });
     }
 
     const campaignId = uuidv4();
-    let mainPictureUrl = null;
-    const imageUrls = [];
 
-    // Save main picture
-    if (main_picture && typeof main_picture === "string") {
+    // ✅ Upload main picture
+    let mainPictureUrl = null;
+    if (typeof main_picture === "string") {
       mainPictureUrl = await uploadImageLocally(
         main_picture,
         `campaign_${campaignId}`,
         "main_picture"
       );
-      data.main_picture = mainPictureUrl;
     }
-    // Save other pictures
-    if (other_pictures && Array.isArray(other_pictures)) {
+
+    // ✅ Upload gallery pictures
+    let otherPicturesUrls = [];
+    if (Array.isArray(other_pictures)) {
       for (let i = 0; i < other_pictures.length; i++) {
         if (typeof other_pictures[i] === "string") {
           const imageUrl = await uploadImageLocally(
@@ -363,32 +446,67 @@ export const createDonationCampaign = async (req, res) => {
             `campaign_${campaignId}`,
             `other_picture_${i}`
           );
-          imageUrls.push(imageUrl);
+          otherPicturesUrls.push(imageUrl);
         }
       }
-      data.other_pictures = imageUrls;
     }
 
-    // Generate and send OTP
-    const otp = Math.floor(100000 + Math.random() * 900000);
-    if (phone_number) {
+    // ✅ Normalize donation_amounts
+    let donationAmounts = [];
+    if (Array.isArray(donation_amounts)) {
+      donationAmounts = donation_amounts;
+    } else if (donation_amounts) {
+      donationAmounts = [donation_amounts];
+    }
+
+    // ✅ If fundraiser added phone, send OTP
+    if (userRole !== "admin" && phone_number) {
+      const otp = Math.floor(100000 + Math.random() * 900000);
       sendOTP(phone_number, otp);
     }
 
-    const campaign = new DonationCampaign(data);
+    // ✅ Create campaign object
+    const campaign = new DonationCampaign({
+      campaign_title,
+      short_description,
+      campaign_description,
+      story,
+      main_picture: mainPictureUrl,
+      other_pictures: otherPicturesUrls,
+      beneficiary_type,
+      cause_category,
+      phone_number,
+      terms_agreed,
+      target_amount,
+      minimum_amount,
+      donation_amounts: donationAmounts,
+      video_link,
+      ngo_name,
+      beneficiary,
+      state,
+      category,
+      created_by: createdBy,
+      is_approved: userRole === "admin", // auto-approve if admin
+    });
+
     await campaign.save();
 
-    res.status(200).json({
+    res.status(201).json({
       status: true,
-      message: "Campaign created successfully and OTP sent to user",
+      message:
+        userRole === "admin"
+          ? "Campaign created successfully"
+          : "Campaign submitted successfully. Awaiting admin approval.",
       data: campaign,
     });
   } catch (error) {
     console.error("Create campaign error:", error);
-    res.status(400).json({ error: error.message });
+    res.status(500).json({
+      status: false,
+      message: "Error creating campaign: " + error.message,
+    });
   }
 };
-
 // Get a single donation campaign by ID
 // export const getDonationCampaignById = async (req, res) => {
 //   try {
@@ -1274,92 +1392,81 @@ export const getCampaignsByCategoryWithSearch = async (req, res) => {
 
 export const createCampaignWithLimitedFields = async (req, res) => {
   try {
-    // Destructure only the required fields from the request body
     const {
       campaign_title,
-      short_description,
       main_picture,
-      other_pictures,
-      campaign_description,
+      other_pictures = [],
       story,
+      beneficiary_type,
+      beneficiary,
+      location,
+      target_amount,
+      terms_agreed,
+      category,
+      dynamic_fields = {}, // ✅ accept flexible dynamic fields
     } = req.body;
 
-    // Validate required fields
-    if (
-      !campaign_title ||
-      !short_description ||
-      !main_picture ||
-      !campaign_description
-    ) {
+    if (!campaign_title || !main_picture || !story) {
       return res.status(400).json({
         status: false,
         message:
-          "Please provide all required fields: campaign_title, short_description, main_picture, and campaign_description.",
+          "Please provide all required fields: campaign_title, main_picture, and story.",
       });
     }
 
-    // Generate a unique campaign ID
     const campaignId = uuidv4();
 
-    // Prepare directory to store images
-    const baseDir = "images/campaign_images";
-    const campaignDir = path.join(baseDir, `campaign_${campaignId}`);
-    if (!fs.existsSync(campaignDir)) {
-      fs.mkdirSync(campaignDir, { recursive: true });
-    }
-
-    // Handle main picture upload
+    // ✅ Upload main picture
     let mainPictureUrl = null;
-    if (
-      typeof main_picture === "string" &&
-      /^data:image\/[a-zA-Z]+;base64,/.test(main_picture)
-    ) {
-      const buffer = base64ToBuffer(main_picture);
+    if (typeof main_picture === "string") {
       mainPictureUrl = await uploadImageLocally(
-        buffer,
-        `campaign_images/campaign_${campaignId}/main_picture.jpeg`
+        main_picture,
+        `campaign_${campaignId}`,
+        "main_picture"
       );
     }
 
-    // Handle other pictures upload
+    // ✅ Upload other pictures
     let otherPicturesUrls = [];
-    if (Array.isArray(other_pictures)) {
-      for (let i = 0; i < other_pictures.length; i++) {
-        const picture = other_pictures[i];
-        if (
-          typeof picture === "string" &&
-          /^data:image\/[a-zA-Z]+;base64,/.test(picture)
-        ) {
-          const buffer = base64ToBuffer(picture);
-          const imageUrl = await uploadImageLocally(
-            buffer,
-            `campaign_images/campaign_${campaignId}/other_picture_${i}.jpeg`
-          );
-          otherPicturesUrls.push(imageUrl);
-        }
+    for (let i = 0; i < other_pictures.length; i++) {
+      if (typeof other_pictures[i] === "string") {
+        const imageUrl = await uploadImageLocally(
+          other_pictures[i],
+          `campaign_${campaignId}`,
+          `other_picture_${i}`
+        );
+        otherPicturesUrls.push(imageUrl);
       }
     }
 
-    // Create the new campaign object
+    // ✅ Create campaign object
     const newCampaign = new DonationCampaign({
       campaign_title,
-      short_description,
-      campaign_description,
+      campaign_description: story,
       story,
       main_picture: mainPictureUrl,
       other_pictures: otherPicturesUrls,
+      beneficiary_type,
+      beneficiary,
+      state: location,
+      target_amount,
+      terms_agreed,
+      category,
+      dynamic_fields, // ✅ save all extra fields
       created_by: req.user.id,
+      hidden: true,
+      is_approved: false,
     });
 
-    // Save to DB
     await newCampaign.save();
 
     res.status(201).json({
       status: true,
-      message: "Campaign created successfully",
+      message: "Fundraiser campaign submitted successfully",
       data: newCampaign,
     });
   } catch (error) {
+    console.error("Fundraiser campaign error:", error);
     res.status(500).json({
       status: false,
       message: "Error creating campaign: " + error.message,
@@ -1502,111 +1609,104 @@ export const createCampaignWithLimitedFields = async (req, res) => {
 
 export const updateCampaignWithLimitedFields = async (req, res) => {
   try {
-    const { id } = req.body; // Get campaign ID from request body
-    const {
-      campaign_title,
-      short_description,
-      main_picture,
-      other_pictures,
-      campaign_description,
-      story,
-    } = req.body;
+    const { id } = req.body; // campaign id comes in body (from fundraiser form)
+    if (!id) {
+      return res
+        .status(400)
+        .json({ status: false, message: "Missing campaign ID" });
+    }
 
-    // Validate required fields
-    if (
-      !campaign_title ||
-      !short_description ||
-      !main_picture ||
-      !campaign_description
-    ) {
+    const campaign = await DonationCampaign.findById(id);
+    if (!campaign) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Campaign not found" });
+    }
+
+    const data = { ...req.body };
+    let mainPictureUrl = campaign.main_picture;
+
+    // ✅ Handle main_picture
+    if (data.main_picture) {
+      if (/^data:image\/[a-zA-Z]+;base64,/.test(data.main_picture)) {
+        mainPictureUrl = await uploadImageLocally(
+          data.main_picture,
+          `campaign_${id}`,
+          "main_picture"
+        );
+        data.main_picture = mainPictureUrl;
+      } else if (data.main_picture.startsWith("/images/")) {
+        data.main_picture = data.main_picture; // keep existing
+      } else {
+        return res
+          .status(400)
+          .json({ status: false, message: "Invalid main picture format" });
+      }
+    }
+
+    // ✅ Handle other_pictures
+    if (data.other_pictures && Array.isArray(data.other_pictures)) {
+      const newOtherPictures = [];
+      const existingUrls = [];
+
+      for (let i = 0; i < data.other_pictures.length; i++) {
+        const picture = data.other_pictures[i];
+
+        if (/^data:image\/[a-zA-Z]+;base64,/.test(picture)) {
+          const uploadedUrl = await uploadImageLocally(
+            picture,
+            `campaign_${id}`,
+            `other_picture_${i}`
+          );
+          newOtherPictures.push(uploadedUrl);
+        } else if (picture.startsWith("/images/")) {
+          existingUrls.push(picture);
+        }
+      }
+
+      data.other_pictures = [...existingUrls, ...newOtherPictures];
+
+      // Remove unused old images
+      const oldPictures = campaign.other_pictures || [];
+      const toDelete = oldPictures.filter(
+        (pic) => !data.other_pictures.includes(pic)
+      );
+
+      for (const pic of toDelete) {
+        const filePath = path.resolve(`.${pic}`);
+        try {
+          await fs.promises.unlink(filePath);
+        } catch (err) {
+          console.error("Failed to delete old image:", err);
+        }
+      }
+    }
+
+    // ✅ Required fields validation (limited fields only)
+    if (!data.campaign_title || !data.campaign_description) {
       return res.status(400).json({
         status: false,
         message:
-          "Please provide all required fields: campaign_title, short_description, main_picture, and campaign_description.",
+          "Missing required fields: campaign_title or campaign_description",
       });
     }
 
-    // Find the campaign by ID
-    const campaign = await DonationCampaign.findById(id);
-    if (!campaign) {
-      return res.status(404).json({
-        status: false,
-        message: "Campaign not found",
-      });
-    }
+    // ✅ Assign allowed fields
+    Object.assign(campaign, {
+      campaign_title: data.campaign_title,
+      short_description: data.short_description || campaign.short_description,
+      campaign_description: data.campaign_description,
+      story: data.story || campaign.story,
+      beneficiary_type: data.beneficiary_type || campaign.beneficiary_type,
+      beneficiary: data.beneficiary || campaign.beneficiary,
+      state: data.location || campaign.state,
+      target_amount: data.target_amount || campaign.target_amount,
+      category: data.category || campaign.category,
+      main_picture: data.main_picture || campaign.main_picture,
+      other_pictures: data.other_pictures || campaign.other_pictures,
+      dynamic_fields: data.dynamic_fields || campaign.dynamic_fields, // ✅ allow dynamic fields update
+    });
 
-    // Update text fields
-    campaign.campaign_title = campaign_title;
-    campaign.short_description = short_description;
-    campaign.campaign_description = campaign_description;
-    campaign.story = story;
-
-    // Handle main picture update
-    if (main_picture && /^data:image\/[a-zA-Z]+;base64,/.test(main_picture)) {
-      // Delete old main picture locally if it exists and is a relative path (not URL)
-      if (
-        campaign.main_picture &&
-        !campaign.main_picture.startsWith("http") &&
-        campaign.main_picture.startsWith("/images/")
-      ) {
-        await deleteImageLocally(campaign.main_picture);
-      }
-
-      // Upload new base64 main picture locally
-      const buffer = base64ToBuffer(main_picture);
-      const fileName = `campaign_${id}_main_picture.jpeg`;
-      const newMainPictureUrl = await uploadImageLocally(buffer, fileName);
-      campaign.main_picture = newMainPictureUrl;
-    } else if (
-      typeof main_picture === "string" &&
-      main_picture.startsWith("/images/")
-    ) {
-      // Retain existing local path for main picture
-      campaign.main_picture = main_picture;
-    } else {
-      return res
-        .status(400)
-        .json({ error: "Invalid main picture URL provided" });
-    }
-
-    // Handle other pictures update
-    const existingUrls = (other_pictures || []).filter(
-      (pic) => typeof pic === "string" && pic.startsWith("/images/")
-    ); // Retain only local paths
-    const newOtherPictures = [];
-
-    // Loop through other pictures to handle base64 images
-    for (let i = 0; i < (other_pictures || []).length; i++) {
-      const picture = other_pictures[i];
-      if (
-        typeof picture === "string" &&
-        /^data:image\/[a-zA-Z]+;base64,/.test(picture)
-      ) {
-        // Convert base64 to buffer and upload locally
-        const buffer = base64ToBuffer(picture);
-        const fileName = `campaign_${id}_other_picture_${i}.jpeg`;
-        const uploadedUrl = await uploadImageLocally(buffer, fileName);
-        newOtherPictures.push(uploadedUrl);
-      }
-    }
-
-    // Delete any old pictures that are not in the updated URL list
-    const oldPictures = campaign.other_pictures || [];
-    await Promise.all(
-      oldPictures.map(async (oldPic) => {
-        if (!existingUrls.includes(oldPic)) {
-          // Only delete local files (skip URLs starting with http)
-          if (oldPic.startsWith("/images/")) {
-            await deleteImageLocally(oldPic);
-          }
-        }
-      })
-    );
-
-    // Combine existing and newly uploaded pictures URLs
-    campaign.other_pictures = [...existingUrls, ...newOtherPictures];
-
-    // Save updated campaign
     await campaign.save();
 
     res.status(200).json({
@@ -1615,12 +1715,132 @@ export const updateCampaignWithLimitedFields = async (req, res) => {
       data: campaign,
     });
   } catch (error) {
-    res.status(500).json({
-      status: false,
-      message: "Error updating campaign: " + error.message,
-    });
+    console.error("Update campaign error:", error);
+    res.status(500).json({ status: false, message: error.message });
   }
 };
+
+// export const updateCampaignWithLimitedFields = async (req, res) => {
+//   try {
+//     const { id } = req.body; // Get campaign ID from request body
+//     const {
+//       campaign_title,
+//       short_description,
+//       main_picture,
+//       other_pictures,
+//       campaign_description,
+//       story,
+//     } = req.body;
+
+//     // Validate required fields
+//     if (
+//       !campaign_title ||
+//       !short_description ||
+//       !main_picture ||
+//       !campaign_description
+//     ) {
+//       return res.status(400).json({
+//         status: false,
+//         message:
+//           "Please provide all required fields: campaign_title, short_description, main_picture, and campaign_description.",
+//       });
+//     }
+
+//     // Find the campaign by ID
+//     const campaign = await DonationCampaign.findById(id);
+//     if (!campaign) {
+//       return res.status(404).json({
+//         status: false,
+//         message: "Campaign not found",
+//       });
+//     }
+
+//     // Update text fields
+//     campaign.campaign_title = campaign_title;
+//     campaign.short_description = short_description;
+//     campaign.campaign_description = campaign_description;
+//     campaign.story = story;
+
+//     // Handle main picture update
+//     if (main_picture && /^data:image\/[a-zA-Z]+;base64,/.test(main_picture)) {
+//       // Delete old main picture locally if it exists and is a relative path (not URL)
+//       if (
+//         campaign.main_picture &&
+//         !campaign.main_picture.startsWith("http") &&
+//         campaign.main_picture.startsWith("/images/")
+//       ) {
+//         await deleteImageLocally(campaign.main_picture);
+//       }
+
+//       // Upload new base64 main picture locally
+//       const buffer = base64ToBuffer(main_picture);
+//       const fileName = `campaign_${id}_main_picture.jpeg`;
+//       const newMainPictureUrl = await uploadImageLocally(buffer, fileName);
+//       campaign.main_picture = newMainPictureUrl;
+//     } else if (
+//       typeof main_picture === "string" &&
+//       main_picture.startsWith("/images/")
+//     ) {
+//       // Retain existing local path for main picture
+//       campaign.main_picture = main_picture;
+//     } else {
+//       return res
+//         .status(400)
+//         .json({ error: "Invalid main picture URL provided" });
+//     }
+
+//     // Handle other pictures update
+//     const existingUrls = (other_pictures || []).filter(
+//       (pic) => typeof pic === "string" && pic.startsWith("/images/")
+//     ); // Retain only local paths
+//     const newOtherPictures = [];
+
+//     // Loop through other pictures to handle base64 images
+//     for (let i = 0; i < (other_pictures || []).length; i++) {
+//       const picture = other_pictures[i];
+//       if (
+//         typeof picture === "string" &&
+//         /^data:image\/[a-zA-Z]+;base64,/.test(picture)
+//       ) {
+//         // Convert base64 to buffer and upload locally
+//         const buffer = base64ToBuffer(picture);
+//         const fileName = `campaign_${id}_other_picture_${i}.jpeg`;
+//         const uploadedUrl = await uploadImageLocally(buffer, fileName);
+//         newOtherPictures.push(uploadedUrl);
+//       }
+//     }
+
+//     // Delete any old pictures that are not in the updated URL list
+//     const oldPictures = campaign.other_pictures || [];
+//     await Promise.all(
+//       oldPictures.map(async (oldPic) => {
+//         if (!existingUrls.includes(oldPic)) {
+//           // Only delete local files (skip URLs starting with http)
+//           if (oldPic.startsWith("/images/")) {
+//             await deleteImageLocally(oldPic);
+//           }
+//         }
+//       })
+//     );
+
+//     // Combine existing and newly uploaded pictures URLs
+//     campaign.other_pictures = [...existingUrls, ...newOtherPictures];
+
+//     // Save updated campaign
+//     await campaign.save();
+
+//     res.status(200).json({
+//       status: true,
+//       message: "Campaign updated successfully",
+//       data: campaign,
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       status: false,
+//       message: "Error updating campaign: " + error.message,
+//     });
+//   }
+// };
 
 export const getCampaignById = async (req, res) => {
   try {

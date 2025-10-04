@@ -73,6 +73,7 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    is_guest: { type: Boolean, default: false },
   },
   {
     timestamps: true, // adds createdAt and updatedAt

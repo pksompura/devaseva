@@ -465,12 +465,17 @@ export const createOrder = async (req, res) => {
 
     await donation.save();
 
-    // ✅ Flat response (no nested donor object)
+    // 🔹 Calculate 1% commission for linked account (in paise)
+    const commissionAmount = Math.round(amount * 0.01 * 100); // 1% of total donation
+
+    // ✅ Return order + donation + commission info
     return res.status(200).json({
       success: true,
       data: order,
       donation_id: donation._id,
-      donor_name: donorFullName, // 🔑 directly include donor_name
+      donor_name: donorFullName,
+      commission_amount: commissionAmount, // in paise
+      linked_account: "acc_RJmkqZtjvoz0Cj", // your linked account ID
     });
   } catch (error) {
     console.error("Error creating order:", error);
@@ -651,22 +656,104 @@ export const createOrder = async (req, res) => {
 //     });
 //   }
 // };
+// export const verifyPayment = async (req, res) => {
+//   const { razorpay_payment_id, donation_id } = req.body;
+
+//   try {
+//     // 1. Verify payment with Razorpay
+//     const razorpayResponse = await axios.get(
+//       `https://api.razorpay.com/v1/payments/${razorpay_payment_id}`,
+//       {
+//         auth: {
+//           username: process.env.RAZORPAY_KEY_ID,
+//           password: process.env.RAZORPAY_SECRET,
+//         },
+//       }
+//     );
+
+//     const paymentDetails = razorpayResponse.data;
+//     if (paymentDetails.status !== "captured") {
+//       return res.status(400).json({
+//         status: false,
+//         message: "Payment not successful!",
+//       });
+//     }
+
+//     // 2. Find donation entry
+//     const donation = await Donation.findById(donation_id)
+//       .populate("donation_campaign_id")
+//       .populate("user_id");
+
+//     if (!donation) {
+//       return res.status(404).json({
+//         status: false,
+//         message: "Donation not found!",
+//       });
+//     }
+
+//     // 3. Update donation
+//     donation.payment_status = "successful";
+//     donation.paid = true;
+//     donation.transaction_id = razorpay_payment_id; // now Razorpay payment id
+//     await donation.save();
+
+//     // 4. Update campaign raised amount
+//     const campaign = donation.donation_campaign_id;
+//     if (campaign) {
+//       const currentRaised = campaign.raised_amount
+//         ? parseFloat(campaign.raised_amount.toString())
+//         : 0;
+//       campaign.raised_amount =
+//         currentRaised + parseFloat(donation.total_amount.toString());
+//       await campaign.save();
+//     }
+
+//     // 5. Generate receipt
+//     const receiptFileName = `receipt_${donation._id}.pdf`;
+//     const receiptPath = await generateReceiptPDF(
+//       donation,
+//       donation.user_id,
+//       receiptFileName
+//     );
+
+//     donation.receipt_url = `/receipts/${receiptFileName}`;
+//     await donation.save();
+
+//     // 6. Send email
+//     await sendDonationReceipt(
+//       donation.user_id.email,
+//       donation.user_id.full_name || donation.user_id.name,
+//       new Date().toLocaleString(),
+//       donation.total_amount,
+//       razorpay_payment_id,
+//       donation.notes || "",
+//       receiptPath
+//     );
+
+//     return res.status(200).json({
+//       status: true,
+//       message: "Payment Verified and Donation Updated Successfully",
+//       donation,
+//       receipt_url: donation.receipt_url,
+//     });
+//   } catch (error) {
+//     console.error("Payment Verification Error:", error);
+//     return res.status(500).json({
+//       status: false,
+//       message: "Internal Server Error!",
+//     });
+//   }
+// };
+
 export const verifyPayment = async (req, res) => {
   const { razorpay_payment_id, donation_id } = req.body;
 
   try {
-    // 1. Verify payment with Razorpay
-    const razorpayResponse = await axios.get(
-      `https://api.razorpay.com/v1/payments/${razorpay_payment_id}`,
-      {
-        auth: {
-          username: process.env.RAZORPAY_KEY_ID,
-          password: process.env.RAZORPAY_SECRET,
-        },
-      }
+    // 1️⃣ Fetch payment details
+    const paymentDetails = await razorpayInstance.payments.fetch(
+      razorpay_payment_id
     );
 
-    const paymentDetails = razorpayResponse.data;
     if (paymentDetails.status !== "captured") {
       return res.status(400).json({
         status: false,
@@ -674,7 +761,7 @@ export const verifyPayment = async (req, res) => {
       });
     }
 
-    // 2. Find donation entry
+    // 2️⃣ Find donation
     const donation = await Donation.findById(donation_id)
       .populate("donation_campaign_id")
       .populate("user_id");
@@ -686,13 +773,13 @@ export const verifyPayment = async (req, res) => {
       });
     }
 
-    // 3. Update donation
+    // 3️⃣ Update donation as successful
     donation.payment_status = "successful";
     donation.paid = true;
-    donation.transaction_id = razorpay_payment_id; // now Razorpay payment id
+    donation.transaction_id = razorpay_payment_id;
     await donation.save();
 
-    // 4. Update campaign raised amount
+    // 4️⃣ Update campaign raised amount
     const campaign = donation.donation_campaign_id;
     if (campaign) {
       const currentRaised = campaign.raised_amount
@@ -703,7 +790,40 @@ export const verifyPayment = async (req, res) => {
       await campaign.save();
     }
 
-    // 5. Generate receipt
+    // 5️⃣ Transfer 1% commission to linked account
+    let commissionAmount = Math.round(donation.total_amount * 0.01 * 100); // 1% in paise
+    // ✅ Ensure minimum ₹1 (100 paise)
+    if (commissionAmount < 100) {
+      commissionAmount = 100;
+    }
+
+    const transferData = {
+      transfers: [
+        {
+          account: "acc_RJmkqZtjvoz0Cj", // Your linked account ID
+          amount: commissionAmount, // in paise
+          currency: "INR",
+          notes: {
+            donation_id: donation._id.toString(),
+            donor: donation.user_id.full_name || "Anonymous",
+          },
+        },
+      ],
+    };
+
+    try {
+      await razorpayInstance.payments.transfer(
+        razorpay_payment_id,
+        transferData
+      );
+    } catch (err) {
+      console.error(
+        "Commission Transfer Error:",
+        err?.description || err.message
+      );
+    }
+
+    // 6️⃣ Generate receipt
     const receiptFileName = `receipt_${donation._id}.pdf`;
     const receiptPath = await generateReceiptPDF(
       donation,
@@ -714,7 +834,7 @@ export const verifyPayment = async (req, res) => {
     donation.receipt_url = `/receipts/${receiptFileName}`;
     await donation.save();
 
-    // 6. Send email
+    // 7️⃣ Send email receipt
     await sendDonationReceipt(
       donation.user_id.email,
       donation.user_id.full_name || donation.user_id.name,
@@ -727,9 +847,11 @@ export const verifyPayment = async (req, res) => {
 
     return res.status(200).json({
       status: true,
-      message: "Payment Verified and Donation Updated Successfully",
+      message:
+        "Payment Verified, Donation Updated, and Commission Transferred Successfully",
       donation,
       receipt_url: donation.receipt_url,
+      commission_amount: commissionAmount, // in paise
     });
   } catch (error) {
     console.error("Payment Verification Error:", error);

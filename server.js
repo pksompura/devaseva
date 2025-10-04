@@ -9,6 +9,8 @@ import enquiryRoutes from "./routes/enquiry.js";
 import subDonationRoutes from "./routes/subDonationRoutes.js";
 import categoryRoutes from "./routes/category.js";
 import transactionRoutes from "./routes/transactionRoutes.js";
+import fundraiserRoutes from "./routes/fundraiserRoutes.js";
+
 connectDB();
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -83,6 +85,7 @@ app.use("/images", express.static(path.join(process.cwd(), "images")));
 
 // Routes
 app.use("/api/users", userRoutes);
+app.use("/api/fundraiser", fundraiserRoutes);
 app.use("/api/donation_campaign", donationRoutes);
 app.use("/api/enquiry", enquiryRoutes);
 app.use("/api/subDonation", subDonationRoutes);

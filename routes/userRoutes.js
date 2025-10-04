@@ -12,6 +12,7 @@ import {
   verifyOTP,
   getUserWithLoginHistory,
   blockUser,
+  guestLogin,
 } from "../controllers/user.js";
 import {
   authenticateAdmin,
@@ -28,6 +29,7 @@ router.post("/verifyOtp", verifyOTP);
 router.get("/get-all-users", listUsers);
 router.post("/logout", logout);
 router.post("/login", registerOrLoginUser);
+router.post("/guest-login", guestLogin);
 router.get("/get-user-profile", authenticateUser, getUserProfile);
 router.delete("/delete/:id", authenticateUser, deleteUser);
 router.patch("/block/:id", authenticateAdmin, blockUser);
