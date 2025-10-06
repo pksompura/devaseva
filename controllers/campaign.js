@@ -21,6 +21,7 @@ import path from "path";
 import generateReceiptPDF from "../utils/generateReceiptPDF.js"; // Adjust path as needed
 import upload from "../utils/multerConfig.js";
 import { base64ToBuffer } from "../utils/base64Helper.js";
+import User from "../models/users.js";
 
 // Initialize Firebase app
 initializeApp(config.firebaseConfig);
@@ -774,6 +775,27 @@ export const listDonationCampaigns = async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+};
+
+// ✅ Get only Fundraiser campaigns (created by users, not admins)
+export const getFundraiserCampaigns = async (req, res) => {
+  try {
+    // 1️⃣ Get all campaigns and populate created_by
+    const campaigns = await DonationCampaign.find({}).populate(
+      "created_by",
+      "full_name email mobile_number role"
+    );
+
+    // 2️⃣ Filter only user-created campaigns
+    const fundraiserCampaigns = campaigns.filter(
+      (c) => c.created_by && c.created_by.role === "user"
+    );
+
+    res.status(200).json({ campaigns: fundraiserCampaigns });
+  } catch (error) {
+    console.error("Error fetching fundraiser campaigns:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 

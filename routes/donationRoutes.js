@@ -5,6 +5,7 @@ import {
   getCampaignsByCategoryWithSearch,
   getDonationCampaignById,
   listDonationCampaigns,
+  getFundraiserCampaigns,
   updateDonationCampaign,
   uploadTextEditorImage, // Include text editor image upload handler
   deleteTextEditorImage, // Include text editor image delete handler
@@ -45,6 +46,8 @@ router.get("/user/campaigns", authenticateUser, getDonationCampaignsByUser);
 router.get("/user/:id", authenticateUser, getCampaignById);
 // Route to list all donation campaigns with pagination
 router.get("/list", listDonationCampaigns);
+router.get("/fundraiser-campaigns", getFundraiserCampaigns);
+
 router.get("/list-false", listDonationCampaignsFalse);
 
 // Route to update a donation campaign by ID
