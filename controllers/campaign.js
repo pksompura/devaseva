@@ -673,6 +673,7 @@ export const updateDonationDetails = async (req, res) => {
 //     return res.status(500).json({ message: "Failed to fetch receipt." });
 //   }
 // }
+
 export async function downloadDonationReceipt(req, res) {
   const { transaction_id } = req.params;
   const filePath = path.resolve(`./receipts/receipt_${transaction_id}.pdf`);

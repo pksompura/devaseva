@@ -824,7 +824,7 @@ export const verifyPayment = async (req, res) => {
     }
 
     // 6️⃣ Generate receipt
-    const receiptFileName = `receipt_${donation._id}.pdf`;
+    const receiptFileName = `receipt_${donation.transaction_id}.pdf`;
     const receiptPath = await generateReceiptPDF(
       donation,
       donation.user_id,
