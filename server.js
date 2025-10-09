@@ -4,12 +4,14 @@ import cors from "cors";
 import { fileURLToPath } from "url";
 import connectDB from "./db/db.js";
 import userRoutes from "./routes/userRoutes.js";
+import kycRoutes from "./routes/kycRoutes.js";
 import donationRoutes from "./routes/donationRoutes.js";
 import enquiryRoutes from "./routes/enquiry.js";
 import subDonationRoutes from "./routes/subDonationRoutes.js";
 import categoryRoutes from "./routes/category.js";
 import transactionRoutes from "./routes/transactionRoutes.js";
 import fundraiserRoutes from "./routes/fundraiserRoutes.js";
+import "./workers/paymentWorker.js";
 
 connectDB();
 const app = express();
@@ -85,6 +87,7 @@ app.use("/images", express.static(path.join(process.cwd(), "images")));
 
 // Routes
 app.use("/api/users", userRoutes);
+app.use("/api/kyc", kycRoutes);
 app.use("/api/fundraiser", fundraiserRoutes);
 app.use("/api/donation_campaign", donationRoutes);
 app.use("/api/enquiry", enquiryRoutes);
@@ -93,7 +96,8 @@ app.use("/api/category", categoryRoutes);
 app.use("/api/transactions", transactionRoutes);
 
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`⚡ Payment worker also running in same process`);
 });
 
 app.use((err, req, res, next) => {

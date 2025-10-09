@@ -22,6 +22,8 @@ import generateReceiptPDF from "../utils/generateReceiptPDF.js"; // Adjust path 
 import upload from "../utils/multerConfig.js";
 import { base64ToBuffer } from "../utils/base64Helper.js";
 import User from "../models/users.js";
+import Withdrawal from "../models/Withdrawal.js";
+import BeneficiaryBank from "../models/BeneficiaryBank.js";
 
 // Initialize Firebase app
 initializeApp(config.firebaseConfig);
@@ -37,6 +39,203 @@ const storage = getStorage();
 //   }
 //   return Buffer.from(matches[2], "base64");
 // };
+
+// Save / update beneficiary bank
+export const saveBankDetails = async (req, res) => {
+  try {
+    const { campaignId } = req.params;
+
+    if (!campaignId || !mongoose.Types.ObjectId.isValid(campaignId)) {
+      return res.status(400).json({ error: "Invalid or missing campaignId" });
+    }
+
+    const { bank_name, account_holder_name, account_number, ifsc_code } =
+      req.body;
+
+    // ✅ Check campaign + authorization in one go
+    const campaign = await DonationCampaign.findById(
+      campaignId,
+      "created_by"
+    ).lean(); // lean() makes it faster (plain JS object)
+
+    if (!campaign) {
+      return res.status(404).json({ error: "Campaign not found" });
+    }
+
+    const userId = String(req.user._id || req.user.id);
+    const creatorId = String(campaign.created_by);
+
+    if (req.user.role !== "admin" && userId !== creatorId) {
+      return res
+        .status(403)
+        .json({ error: "Not authorized to update bank details" });
+    }
+
+    // ✅ Upsert bank record (single query)
+    const bank = await BeneficiaryBank.findOneAndUpdate(
+      { campaign: campaignId },
+      {
+        user: userId,
+        campaign: campaignId,
+        bank_name,
+        account_holder_name,
+        account_number,
+        ifsc_code,
+      },
+      {
+        upsert: true,
+        new: true,
+        runValidators: true,
+        setDefaultsOnInsert: true,
+      }
+    ).lean();
+
+    return res.json({
+      message: bank?._id ? "Bank details updated" : "Bank details created",
+      bank,
+    });
+  } catch (err) {
+    console.error("Save Bank Error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Request withdrawal
+export const requestWithdrawal = async (req, res) => {
+  try {
+    const { campaignId } = req.params;
+    const { amount } = req.body;
+
+    const withdrawal = await Withdrawal.create({
+      campaign: campaignId,
+      user: req.user.id,
+      amount,
+    });
+
+    res.json({ message: "Withdrawal requested", withdrawal });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Get withdrawals for a campaign
+export const getWithdrawals = async (req, res) => {
+  try {
+    const { campaignId } = req.params;
+    const withdrawals = await Withdrawal.find({ campaign: campaignId })
+      .populate("user", "full_name email mobile_number")
+      .sort({ createdAt: -1 });
+
+    res.json(withdrawals);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+// Approve/Reject Bank Details (Admin only)
+export const updateBankStatus = async (req, res) => {
+  try {
+    const { bankId } = req.params;
+    const { status } = req.body; // "Approved" | "Rejected"
+
+    if (!["Approved", "Rejected"].includes(status)) {
+      return res.status(400).json({ error: "Invalid status" });
+    }
+
+    const bank = await BeneficiaryBank.findByIdAndUpdate(
+      bankId,
+      { verified: status === "Approved" },
+      { new: true }
+    );
+
+    if (!bank) {
+      return res.status(404).json({ error: "Bank details not found" });
+    }
+
+    res.json({ message: `Bank details ${status}`, bank });
+  } catch (err) {
+    console.error("Update Bank Status Error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Admin approves/rejects withdrawal
+export const updateWithdrawalStatus = async (req, res) => {
+  try {
+    const { withdrawalId } = req.params;
+    const { status } = req.body; // "Completed" | "Rejected"
+
+    if (!["Completed", "Rejected"].includes(status)) {
+      return res.status(400).json({ error: "Invalid status" });
+    }
+
+    const withdrawal = await Withdrawal.findByIdAndUpdate(
+      withdrawalId,
+      { status, processedAt: new Date() },
+      { new: true }
+    );
+
+    if (!withdrawal) {
+      return res.status(404).json({ error: "Withdrawal not found" });
+    }
+
+    res.json({ message: `Withdrawal ${status}`, withdrawal });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+export const getBank = async (req, res) => {
+  try {
+    const { campaignId } = req.params;
+
+    // Quick fail if campaignId is invalid
+    if (!mongoose.Types.ObjectId.isValid(campaignId)) {
+      return res.status(400).json({ error: "Invalid campaignId" });
+    }
+
+    // Query + lean (for faster read-only docs)
+    const bank = await BeneficiaryBank.findOne({ campaign: campaignId })
+      .populate("user", "full_name email mobile_number role")
+      .populate("campaign", "campaign_title created_by")
+      .lean(); // ✅ return plain JS object, faster than Mongoose doc
+
+    if (!bank) {
+      return res.status(404).json({ message: "No bank details found" });
+    }
+
+    // ✅ Clean structured response (small payload, avoids sending full mongoose obj)
+    const response = {
+      _id: bank._id,
+      bank_name: bank.bank_name,
+      account_holder_name: bank.account_holder_name,
+      account_number: bank.account_number,
+      ifsc_code: bank.ifsc_code,
+      verified: bank.verified,
+      createdAt: bank.createdAt,
+      updatedAt: bank.updatedAt,
+      campaign: bank.campaign
+        ? {
+            _id: bank.campaign._id,
+            campaign_title: bank.campaign.campaign_title,
+            created_by: bank.campaign.created_by,
+          }
+        : null,
+      user: bank.user
+        ? {
+            _id: bank.user._id,
+            full_name: bank.user.full_name,
+            email: bank.user.email,
+            mobile_number: bank.user.mobile_number,
+            role: bank.user.role,
+          }
+        : null,
+    };
+
+    res.json({ bank: response });
+  } catch (error) {
+    console.error("Get Bank Error:", error.message);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 // Helper function to upload image to Firebase
 

@@ -23,6 +23,12 @@ import {
   deleteDonation,
   updateDonationDetails,
   downloadDonationReceipt,
+  saveBankDetails,
+  requestWithdrawal,
+  getWithdrawals,
+  updateWithdrawalStatus,
+  updateBankStatus,
+  getBank,
 } from "../controllers/campaign.js";
 import { authenticateUser } from "../middleware/authMiddleware.js";
 
@@ -93,4 +99,15 @@ router.get(
   downloadDonationReceipt
 );
 
+router.get("/:campaignId/getbank", authenticateUser, getBank);
+router.post("/:campaignId/savebank", authenticateUser, saveBankDetails);
+router.put("/bank/:bankId/status", authenticateUser, updateBankStatus);
+
+router.post("/:campaignId/withdraw", authenticateUser, requestWithdrawal);
+router.get("/:campaignId/withdrawals", authenticateUser, getWithdrawals);
+router.put(
+  "/withdrawal/:withdrawalId/status",
+  authenticateUser,
+  updateWithdrawalStatus
+);
 export default router;

@@ -5,6 +5,7 @@ import cron from "node-cron";
 // import DonationCampaign from '../models/DonationCampaign.js';
 import dotenv from "dotenv";
 dotenv.config(); // Ensure this is at the top of the file
+import { paymentQueue } from "../queues/paymentQueue.js";
 
 import Donation from "../models/donation.js";
 import DonationCampaign from "../models/donationCampaign.js";
@@ -25,7 +26,7 @@ import generateReceiptPDF from "../utils/generateReceiptPDF.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 // Initialize Razorpay instance
-const razorpayInstance = new Razorpay({
+export const razorpayInstance = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_SECRET,
 });
@@ -89,7 +90,7 @@ const razorpayInstance = new Razorpay({
 //   };
 //   await transporter.sendMail(mailOptions);
 // };
-const sendDonationReceipt = async (
+export const sendDonationReceipt = async (
   email,
   donorName,
   donationDate,
@@ -745,122 +746,339 @@ export const createOrder = async (req, res) => {
 //   }
 // };
 
+// export const verifyPayment = async (req, res) => {
+//   const { razorpay_payment_id, donation_id } = req.body;
+
+//   try {
+//     // 1️⃣ Fetch payment details
+//     const paymentDetails = await razorpayInstance.payments.fetch(
+//       razorpay_payment_id
+//     );
+
+//     if (paymentDetails.status !== "captured") {
+//       return res.status(400).json({
+//         status: false,
+//         message: "Payment not successful!",
+//       });
+//     }
+
+//     // 2️⃣ Find donation
+//     const donation = await Donation.findById(donation_id)
+//       .populate("donation_campaign_id")
+//       .populate("user_id");
+
+//     if (!donation) {
+//       return res.status(404).json({
+//         status: false,
+//         message: "Donation not found!",
+//       });
+//     }
+
+//     // 3️⃣ Update donation as successful
+//     donation.payment_status = "successful";
+//     donation.paid = true;
+//     donation.transaction_id = razorpay_payment_id;
+//     await donation.save();
+
+//     // 4️⃣ Update campaign raised amount
+//     const campaign = donation.donation_campaign_id;
+//     if (campaign) {
+//       const currentRaised = campaign.raised_amount
+//         ? parseFloat(campaign.raised_amount.toString())
+//         : 0;
+//       campaign.raised_amount =
+//         currentRaised + parseFloat(donation.total_amount.toString());
+//       await campaign.save();
+//     }
+
+//     // 5️⃣ Transfer 1% commission to linked account
+//     let commissionAmount = Math.round(donation.total_amount * 0.01 * 100); // 1% in paise
+//     // ✅ Ensure minimum ₹1 (100 paise)
+//     if (commissionAmount < 100) {
+//       commissionAmount = 100;
+//     }
+
+//     const transferData = {
+//       transfers: [
+//         {
+//           account: "acc_RJmkqZtjvoz0Cj", // Your linked account ID
+//           amount: commissionAmount, // in paise
+//           currency: "INR",
+//           notes: {
+//             donation_id: donation._id.toString(),
+//             donor: donation.user_id.full_name || "Anonymous",
+//           },
+//         },
+//       ],
+//     };
+
+//     try {
+//       await razorpayInstance.payments.transfer(
+//         razorpay_payment_id,
+//         transferData
+//       );
+//     } catch (err) {
+//       console.error(
+//         "Commission Transfer Error:",
+//         err?.description || err.message
+//       );
+//     }
+
+//     // 6️⃣ Generate receipt
+//     const receiptFileName = `receipt_${donation.transaction_id}.pdf`;
+//     const receiptPath = await generateReceiptPDF(
+//       donation,
+//       donation.user_id,
+//       receiptFileName
+//     );
+
+//     donation.receipt_url = `/receipts/${receiptFileName}`;
+//     await donation.save();
+
+//     // 7️⃣ Send email receipt
+//     await sendDonationReceipt(
+//       donation.user_id.email,
+//       donation.user_id.full_name || donation.user_id.name,
+//       new Date().toLocaleString(),
+//       donation.total_amount,
+//       razorpay_payment_id,
+//       donation.notes || "",
+//       receiptPath
+//     );
+
+//     return res.status(200).json({
+//       status: true,
+//       message:
+//         "Payment Verified, Donation Updated, and Commission Transferred Successfully",
+//       donation,
+//       receipt_url: donation.receipt_url,
+//       commission_amount: commissionAmount, // in paise
+//     });
+//   } catch (error) {
+//     console.error("Payment Verification Error:", error);
+//     return res.status(500).json({
+//       status: false,
+//       message: "Internal Server Error!",
+//     });
+//   }
+// };
+
+// export const verifyPayment = async (req, res) => {
+//   const { razorpay_payment_id, donation_id } = req.body;
+
+//   try {
+//     // ✅ Step 1: Verify Razorpay payment
+//     const paymentDetails = await razorpayInstance.payments.fetch(
+//       razorpay_payment_id
+//     );
+//     if (paymentDetails.status !== "captured") {
+//       return res
+//         .status(400)
+//         .json({ status: false, message: "Payment not successful!" });
+//     }
+
+//     // ✅ Step 2: Update donation record instantly
+//     const donation = await Donation.findById(donation_id)
+//       .populate("donation_campaign_id")
+//       .populate("user_id");
+//     donation.payment_status = "successful";
+//     donation.paid = true;
+//     donation.transaction_id = razorpay_payment_id;
+//     await donation.save();
+
+//     // ✅ Step 3: Update campaign raised_amount
+//     const campaign = donation.donation_campaign_id;
+//     if (campaign) {
+//       const currentRaised = Number(campaign.raised_amount || 0);
+//       campaign.raised_amount = currentRaised + Number(donation.total_amount);
+//       await campaign.save();
+//     }
+
+//     // ✅ Step 4: Enqueue background tasks
+//     await paymentQueue.add("postPaymentTasks", {
+//       donationId: donation._id,
+//       razorpay_payment_id,
+//     });
+
+//     // ✅ Step 5: Respond to frontend immediately
+//     res.status(200).json({
+//       status: true,
+//       message: "Payment Verified. Processing receipt & email in background.",
+//       donation,
+//     });
+//   } catch (error) {
+//     console.error("Payment Verification Error:", error);
+//     res.status(500).json({ status: false, message: "Internal Server Error!" });
+//   }
+// };
 export const verifyPayment = async (req, res) => {
   const { razorpay_payment_id, donation_id } = req.body;
 
   try {
-    // 1️⃣ Fetch payment details
+    // Step 1: Verify Razorpay payment
     const paymentDetails = await razorpayInstance.payments.fetch(
       razorpay_payment_id
     );
-
     if (paymentDetails.status !== "captured") {
-      return res.status(400).json({
-        status: false,
-        message: "Payment not successful!",
-      });
+      return res
+        .status(400)
+        .json({ status: false, message: "Payment not successful!" });
     }
 
-    // 2️⃣ Find donation
+    // Step 2: Update donation instantly
     const donation = await Donation.findById(donation_id)
       .populate("donation_campaign_id")
       .populate("user_id");
 
     if (!donation) {
-      return res.status(404).json({
-        status: false,
-        message: "Donation not found!",
-      });
+      return res
+        .status(404)
+        .json({ status: false, message: "Donation not found" });
     }
 
-    // 3️⃣ Update donation as successful
     donation.payment_status = "successful";
     donation.paid = true;
     donation.transaction_id = razorpay_payment_id;
     await donation.save();
 
-    // 4️⃣ Update campaign raised amount
+    // Step 3: Update campaign raised_amount
     const campaign = donation.donation_campaign_id;
     if (campaign) {
-      const currentRaised = campaign.raised_amount
-        ? parseFloat(campaign.raised_amount.toString())
-        : 0;
-      campaign.raised_amount =
-        currentRaised + parseFloat(donation.total_amount.toString());
+      const currentRaised = Number(campaign.raised_amount || 0);
+      campaign.raised_amount = currentRaised + Number(donation.total_amount);
       await campaign.save();
     }
 
-    // 5️⃣ Transfer 1% commission to linked account
-    let commissionAmount = Math.round(donation.total_amount * 0.01 * 100); // 1% in paise
-    // ✅ Ensure minimum ₹1 (100 paise)
-    if (commissionAmount < 100) {
-      commissionAmount = 100;
-    }
-
-    const transferData = {
-      transfers: [
-        {
-          account: "acc_RJmkqZtjvoz0Cj", // Your linked account ID
-          amount: commissionAmount, // in paise
-          currency: "INR",
-          notes: {
-            donation_id: donation._id.toString(),
-            donor: donation.user_id.full_name || "Anonymous",
-          },
-        },
-      ],
-    };
-
-    try {
-      await razorpayInstance.payments.transfer(
-        razorpay_payment_id,
-        transferData
-      );
-    } catch (err) {
-      console.error(
-        "Commission Transfer Error:",
-        err?.description || err.message
-      );
-    }
-
-    // 6️⃣ Generate receipt
-    const receiptFileName = `receipt_${donation.transaction_id}.pdf`;
-    const receiptPath = await generateReceiptPDF(
-      donation,
-      donation.user_id,
-      receiptFileName
-    );
-
-    donation.receipt_url = `/receipts/${receiptFileName}`;
-    await donation.save();
-
-    // 7️⃣ Send email receipt
-    await sendDonationReceipt(
-      donation.user_id.email,
-      donation.user_id.full_name || donation.user_id.name,
-      new Date().toLocaleString(),
-      donation.total_amount,
+    // Step 4: Enqueue worker job for receipt + email
+    await paymentQueue.add("postPaymentTasks", {
+      donation_id: donation._id.toString(),
       razorpay_payment_id,
-      donation.notes || "",
-      receiptPath
-    );
+    });
 
+    // Step 5: Respond immediately
     return res.status(200).json({
       status: true,
       message:
-        "Payment Verified, Donation Updated, and Commission Transferred Successfully",
+        "Payment Verified. Receipt & Email will be processed in background.",
       donation,
-      receipt_url: donation.receipt_url,
-      commission_amount: commissionAmount, // in paise
     });
   } catch (error) {
     console.error("Payment Verification Error:", error);
-    return res.status(500).json({
-      status: false,
-      message: "Internal Server Error!",
-    });
+    res.status(500).json({ status: false, message: "Internal Server Error!" });
   }
 };
+
+//normal verfypayment
+// export const verifyPayment = async (req, res) => {
+//   const { razorpay_payment_id, donation_id } = req.body;
+
+//   try {
+//     // 1️⃣ Verify payment with Razorpay
+//     const paymentDetails = await razorpayInstance.payments.fetch(
+//       razorpay_payment_id
+//     );
+
+//     if (paymentDetails.status !== "captured") {
+//       return res
+//         .status(400)
+//         .json({ status: false, message: "Payment not successful!" });
+//     }
+
+//     // 2️⃣ Find & update donation
+//     const donation = await Donation.findById(donation_id)
+//       .populate("donation_campaign_id")
+//       .populate("user_id");
+
+//     if (!donation) {
+//       return res
+//         .status(404)
+//         .json({ status: false, message: "Donation not found!" });
+//     }
+
+//     donation.payment_status = "successful";
+//     donation.paid = true;
+//     donation.transaction_id = razorpay_payment_id;
+//     await donation.save();
+
+//     // 3️⃣ Update campaign raised amount
+//     const campaign = donation.donation_campaign_id;
+//     if (campaign) {
+//       const currentRaised = campaign.raised_amount
+//         ? parseFloat(campaign.raised_amount.toString())
+//         : 0;
+//       campaign.raised_amount =
+//         currentRaised + parseFloat(donation.total_amount.toString());
+//       await campaign.save();
+//     }
+
+//     // ✅ Send fast success response to frontend
+//     res.status(200).json({
+//       status: true,
+//       message: "Payment Verified & Donation Updated",
+//       donation_id: donation._id,
+//       transaction_id: donation.transaction_id,
+//     });
+
+//     // 🔄 Continue heavy work in background (don’t block browser)
+//     setImmediate(() => handlePostPaymentTasks(donation, razorpay_payment_id));
+//   } catch (error) {
+//     console.error("Payment Verification Error:", error);
+//     res.status(500).json({ status: false, message: "Internal Server Error!" });
+//   }
+// };
+// const handlePostPaymentTasks = async (donation, razorpay_payment_id) => {
+//   try {
+//     // ✅ Commission Transfer
+//     let commissionAmount = Math.round(donation.total_amount * 0.01 * 100);
+//     if (commissionAmount < 100) commissionAmount = 100;
+
+//     try {
+//       await razorpayInstance.payments.transfer(razorpay_payment_id, {
+//         transfers: [
+//           {
+//             account: "acc_RJmkqZtjvoz0Cj",
+//             amount: commissionAmount,
+//             currency: "INR",
+//             notes: {
+//               donation_id: donation._id.toString(),
+//               donor: donation.user_id.full_name || "Anonymous",
+//             },
+//           },
+//         ],
+//       });
+//     } catch (err) {
+//       console.error(
+//         "Commission Transfer Error:",
+//         err?.description || err.message
+//       );
+//     }
+
+//     // ✅ PDF generation
+//     const receiptFileName = `receipt_${donation.transaction_id}.pdf`;
+//     const receiptPath = await generateReceiptPDF(
+//       donation,
+//       donation.user_id,
+//       receiptFileName
+//     );
+//     donation.receipt_url = `/receipts/${receiptFileName}`;
+//     await donation.save();
+
+//     // ✅ Email sending
+//     await sendDonationReceipt(
+//       donation.user_id.email,
+//       donation.user_id.full_name || donation.user_id.name,
+//       new Date().toLocaleString(),
+//       donation.total_amount,
+//       razorpay_payment_id,
+//       donation.notes || "",
+//       receiptPath
+//     );
+
+//     console.log("Background tasks completed for donation:", donation._id);
+//   } catch (err) {
+//     console.error("Post-payment task error:", err.message);
+//   }
+// };
 
 // export const verifyPayment = async (req, res) => {
 //   const {
