@@ -44,7 +44,9 @@ const paymentWorker = new Worker(
     }
 
     // generate receipt
-    const receiptFileName = `receipt_${donation.transaction_id}.pdf`;
+    const receiptFileName = `receipt_${razorpay_payment_id}.pdf`; // ✅ always use Razorpay ID
+
+    // const receiptFileName = `receipt_${donation.transaction_id}.pdf`;
     const receiptPath = await generateReceiptPDF(
       donation,
       donation.user_id,
