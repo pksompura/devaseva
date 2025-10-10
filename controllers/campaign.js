@@ -930,9 +930,17 @@ export const listDonationCampaigns = async (req, res) => {
     const count = await DonationCampaign.countDocuments();
 
     // Get paginated campaigns (if needed, uncomment limit & skip)
-    const campaigns = await DonationCampaign.find().sort({ createdAt: -1 });
-    // .limit(perPage)
-    // .skip((page - 1) * perPage);
+    // const campaigns = await DonationCampaign.find()
+    //   .sort({ createdAt: -1 })
+    //   .skip((page - 1) * perPage)
+    //   .limit(perPage)
+    //   .lean();
+    const campaigns = await DonationCampaign.find(
+      {},
+      "campaign_title main_picture target_amount raised_amount is_tax is_validated is_approved hidden createdAt"
+    )
+      .sort({ createdAt: -1 })
+      .lean();
 
     const totalPages = Math.ceil(count / perPage);
 
@@ -961,7 +969,8 @@ export const listDonationCampaigns = async (req, res) => {
     const campaignsWithDonationCounts = campaigns.map((campaign) => {
       const campaignId = campaign._id.toString();
       return {
-        ...campaign.toObject(),
+        ...campaign,
+        // ...campaign.toObject(),
         successfulDonations: donationCountMap[campaignId] || 0,
       };
     });
@@ -1518,6 +1527,102 @@ export const getCampaignsByCategoryWithSearch = async (req, res) => {
     res.status(400).json({ status: false, message: error.message, data: null });
   }
 };
+// export const getCampaignsByCategoryWithSearch = async (req, res) => {
+//   try {
+//     const { category } = req.params;
+//     const { search } = req.query;
+//     const page = parseInt(req.query.page) || 1;
+//     const perPage = parseInt(req.query.perPage) || 10;
+
+//     // Build query
+//     const query = {};
+
+//     if (category && category !== "All") {
+//       query.category = category; // should already be ObjectId
+//     }
+
+//     if (search && search.trim() !== "") {
+//       query.$or = [
+//         { campaign_title: { $regex: search, $options: "i" } },
+//         { ngo_name: { $regex: search, $options: "i" } },
+//         { title: { $regex: search, $options: "i" } },
+//         { organization: { $regex: search, $options: "i" } },
+//       ];
+//     }
+
+//     // ✅ Optimized aggregation (one query for campaigns + donor counts + total count)
+//     const [result] = await DonationCampaign.aggregate([
+//       { $match: query },
+
+//       // Sort latest first
+//       { $sort: { createdAt: -1 } },
+
+//       // Pagination
+//       { $skip: (page - 1) * perPage },
+//       { $limit: perPage },
+
+//       // Join successful donation counts
+//       {
+//         $lookup: {
+//           from: "donations", // collection name
+//           localField: "_id",
+//           foreignField: "donation_campaign_id",
+//           pipeline: [
+//             { $match: { payment_status: "successful" } },
+//             { $group: { _id: null, successfulDonations: { $sum: 1 } } },
+//           ],
+//           as: "donations",
+//         },
+//       },
+
+//       // Flatten successfulDonations
+//       {
+//         $addFields: {
+//           successfulDonations: {
+//             $ifNull: [
+//               { $arrayElemAt: ["$donations.successfulDonations", 0] },
+//               0,
+//             ],
+//           },
+//         },
+//       },
+
+//       // Select only the fields frontend actually needs
+//       {
+//         $project: {
+//           campaign_title: 1,
+//           main_picture: 1,
+//           target_amount: 1,
+//           raised_amount: 1,
+//           is_tax: 1,
+//           is_validated: 1,
+//           is_approved: 1,
+//           hidden: 1,
+//           createdAt: 1,
+//           successfulDonations: 1,
+//         },
+//       },
+//     ]);
+
+//     // ✅ Faster total count (only count with same query)
+//     const totalCampaigns = await DonationCampaign.countDocuments(query);
+
+//     res.status(200).json({
+//       status: true,
+//       message: "Campaigns fetched successfully",
+//       data: {
+//         campaigns: result || [],
+//         totalCampaigns,
+//         currentPage: page,
+//         totalPages: Math.ceil(totalCampaigns / perPage),
+//         perPage,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Error fetching campaigns:", error);
+//     res.status(400).json({ status: false, message: error.message, data: null });
+//   }
+// };
 
 // export const createCampaignWithLimitedFields = async (req, res) => {
 //   try {

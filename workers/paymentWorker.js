@@ -35,13 +35,13 @@ const paymentWorker = new Worker(
     donation.transaction_id = razorpay_payment_id;
     await donation.save();
 
-    // update campaign
-    const campaign = donation.donation_campaign_id;
-    if (campaign) {
-      campaign.raised_amount =
-        (Number(campaign.raised_amount) || 0) + Number(donation.total_amount);
-      await campaign.save();
-    }
+    // // update campaign
+    // const campaign = donation.donation_campaign_id;
+    // if (campaign) {
+    //   campaign.raised_amount =
+    //     (Number(campaign.raised_amount) || 0) + Number(donation.total_amount);
+    //   await campaign.save();
+    // }
 
     // generate receipt
     const receiptFileName = `receipt_${razorpay_payment_id}.pdf`; // ✅ always use Razorpay ID
