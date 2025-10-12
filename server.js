@@ -84,6 +84,8 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 // Static file serving for images
 // app.use("/images", express.static(path.join(__dirname, "images")));
 app.use("/images", express.static(path.join(process.cwd(), "images")));
+// Serve receipts as static
+// app.use("/receipts", express.static(path.join(process.cwd(), "receipts")));
 
 // Routes
 app.use("/api/users", userRoutes);

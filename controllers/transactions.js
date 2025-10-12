@@ -2081,7 +2081,6 @@ cron.schedule("*/5 * * * *", async () => {
 //     res.status(500).json({ message: "Error generating PDF" });
 //   }
 // };
-
 export const downloadDonationReceipt = async (req, res) => {
   const { donation_id } = req.query;
 
@@ -2091,63 +2090,98 @@ export const downloadDonationReceipt = async (req, res) => {
 
   try {
     const donation = await Donation.findById(donation_id);
-    if (!donation)
+    if (!donation) {
       return res.status(404).json({ message: "Donation not found" });
+    }
 
-    const user = await User.findById(donation.user_id);
-    const campaign = await DonationCampaign.findById(
-      donation.donation_campaign_id
+    // ✅ use receipt_url stored in DB (set by your worker)
+    if (!donation.receipt_url) {
+      return res.status(404).json({ message: "Receipt not available" });
+    }
+
+    const receiptPath = path.join(__dirname, "..", donation.receipt_url);
+
+    if (!fs.existsSync(receiptPath)) {
+      return res.status(404).json({ message: "Receipt file not found" });
+    }
+
+    // ✅ serve the existing file instead of regenerating
+    res.download(
+      receiptPath,
+      `donation-receipt-${donation.transaction_id}.pdf`
     );
-
-    const donorName = user?.name || "Donor";
-    const donationDate = new Date(donation.createdAt).toLocaleDateString(
-      "en-IN"
-    );
-    const transactionId = donation.transaction_id;
-    const amount = parseFloat(donation.total_amount.toString()).toFixed(2);
-    const notes = donation.notes || "";
-    const campaignName = campaign?.title || "Donation Campaign";
-
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <title>Donation Receipt</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
-            .container { background: #fff; padding: 20px; border-radius: 10px; max-width: 600px; margin: auto; }
-            h1 { color: #333; }
-            p { font-size: 14px; color: #555; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <h1>Donation Receipt</h1>
-            <p><strong>Donor Name:</strong> ${donorName}</p>
-            <p><strong>Date:</strong> ${donationDate}</p>
-            <p><strong>Transaction ID:</strong> ${transactionId}</p>
-            <p><strong>Amount:</strong> ₹${amount}</p>
-            <p><strong>Campaign:</strong> ${campaignName}</p>
-            <p><strong>Notes:</strong> ${notes}</p>
-          </div>
-        </body>
-      </html>
-    `;
-
-    let file = { content: html };
-    let options = { format: "A4" };
-
-    const pdfBuffer = await html_to_pdf.generatePdf(file, options);
-
-    res.set({
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="donation-receipt-${transactionId}.pdf"`,
-    });
-
-    res.send(pdfBuffer);
   } catch (error) {
-    console.error("Error generating receipt PDF:", error);
-    res.status(500).json({ message: "Error generating PDF" });
+    console.error("Error downloading receipt PDF:", error);
+    res.status(500).json({ message: "Error downloading PDF" });
   }
 };
+
+// export const downloadDonationReceipt = async (req, res) => {
+//   const { donation_id } = req.query;
+
+//   if (!donation_id) {
+//     return res.status(400).json({ message: "Donation ID is required" });
+//   }
+
+//   try {
+//     const donation = await Donation.findById(donation_id);
+//     if (!donation)
+//       return res.status(404).json({ message: "Donation not found" });
+
+//     const user = await User.findById(donation.user_id);
+//     const campaign = await DonationCampaign.findById(
+//       donation.donation_campaign_id
+//     );
+
+//     const donorName = user?.name || "Donor";
+//     const donationDate = new Date(donation.createdAt).toLocaleDateString(
+//       "en-IN"
+//     );
+//     const transactionId = donation.transaction_id;
+//     const amount = parseFloat(donation.total_amount.toString()).toFixed(2);
+//     const notes = donation.notes || "";
+//     const campaignName = campaign?.title || "Donation Campaign";
+
+//     const html = `
+//       <!DOCTYPE html>
+//       <html>
+//         <head>
+//           <meta charset="utf-8" />
+//           <title>Donation Receipt</title>
+//           <style>
+//             body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
+//             .container { background: #fff; padding: 20px; border-radius: 10px; max-width: 600px; margin: auto; }
+//             h1 { color: #333; }
+//             p { font-size: 14px; color: #555; }
+//           </style>
+//         </head>
+//         <body>
+//           <div class="container">
+//             <h1>Donation Receipt</h1>
+//             <p><strong>Donor Name:</strong> ${donorName}</p>
+//             <p><strong>Date:</strong> ${donationDate}</p>
+//             <p><strong>Transaction ID:</strong> ${transactionId}</p>
+//             <p><strong>Amount:</strong> ₹${amount}</p>
+//             <p><strong>Campaign:</strong> ${campaignName}</p>
+//             <p><strong>Notes:</strong> ${notes}</p>
+//           </div>
+//         </body>
+//       </html>
+//     `;
+
+//     let file = { content: html };
+//     let options = { format: "A4" };
+
+//     const pdfBuffer = await html_to_pdf.generatePdf(file, options);
+
+//     res.set({
+//       "Content-Type": "application/pdf",
+//       "Content-Disposition": `attachment; filename="donation-receipt-${transactionId}.pdf"`,
+//     });
+
+//     res.send(pdfBuffer);
+//   } catch (error) {
+//     console.error("Error generating receipt PDF:", error);
+//     res.status(500).json({ message: "Error generating PDF" });
+//   }
+// };
