@@ -32,6 +32,8 @@ const allowedOrigins = [
   "http://192.168.165.114:5174",
   "http://192.168.65.114:5173",
   "http://172.20.10.4:5173",
+  "http://172.30.128.1:5173",
+  "http://10.14.151.119:5173",
 ];
 
 // const corsOptions = {
@@ -46,22 +48,40 @@ const allowedOrigins = [
 //   },
 //   credentials: true,
 // };
+// const corsOptions = {
+//   origin: function (origin, callback) {
+//     if (!origin || allowedOrigins.includes(origin)) {
+//       callback(null, true);
+//     } else {
+//       console.log("❌ Blocked by CORS:", origin);
+//       callback(new Error("Not allowed by CORS"));
+//     }
+//   },
+//   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+//   allowedHeaders: ["Content-Type", "Authorization"],
+//   exposedHeaders: ["x-rtb-fingerprint-id"], // ← Add this
+
+//   credentials: true,
+//   optionsSuccessStatus: 200,
+// };
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Allow requests with no origin (like mobile apps, curl) or any LAN IP
+    if (
+      !origin ||
+      origin.includes("localhost") ||
+      origin.match(/^http:\/\/\d+\.\d+\.\d+\.\d+(:\d+)?$/)
+    ) {
       callback(null, true);
     } else {
       console.log("❌ Blocked by CORS:", origin);
       callback(new Error("Not allowed by CORS"));
     }
   },
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  exposedHeaders: ["x-rtb-fingerprint-id"], // ← Add this
-
   credentials: true,
-  optionsSuccessStatus: 200,
 };
+// app.use(cors(corsOptions));
+
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions)); // Must be before routes
 
