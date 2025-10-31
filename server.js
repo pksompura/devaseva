@@ -11,6 +11,9 @@ import subDonationRoutes from "./routes/subDonationRoutes.js";
 import categoryRoutes from "./routes/category.js";
 import transactionRoutes from "./routes/transactionRoutes.js";
 import fundraiserRoutes from "./routes/fundraiserRoutes.js";
+import orgRoutes from "./routes/orgRoutes.js";
+import orgAdminRoutes from "./routes/orgAdminRoutes.js";
+
 import "./workers/paymentWorker.js";
 
 connectDB();
@@ -116,6 +119,8 @@ app.use("/api/enquiry", enquiryRoutes);
 app.use("/api/subDonation", subDonationRoutes);
 app.use("/api/category", categoryRoutes);
 app.use("/api/transactions", transactionRoutes);
+app.use("/api/org", orgRoutes);
+app.use("/api/orgAdmin", orgAdminRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
