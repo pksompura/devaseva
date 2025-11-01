@@ -20,6 +20,7 @@ const VerificationTicketSchema = new Schema(
         label: String,
         passed: Boolean,
         comment: String,
+        fileUrl: String,
       },
     ],
     messages: [

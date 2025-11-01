@@ -32,5 +32,11 @@ router.post(
   authenticateAdmin,
   adminCtrl.markPayoutPaid
 );
+// Verify individual NGO document (ADMIN)
+router.post(
+  "/orgs/:orgId/verify-document",
+  authenticateAdmin,
+  adminCtrl.verifyDocument
+);
 
 export default router;
