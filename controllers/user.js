@@ -21,10 +21,10 @@ const isTokenBlacklisted = (req, res, next) => {
   next();
 };
 
-// // Function to generate OTP
-// function generateOTP() {
-//   return Math.floor(100000 + Math.random() * 900000).toString();
-// }
+// Function to generate OTP
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 // Update user information
 export const updateUserInfo = async (req, res) => {
   const {
@@ -135,9 +135,9 @@ export const updateUserInfo = async (req, res) => {
 // SMSINDIAHUB_PEID=1701158019630577568
 // SMSINDIAHUB_DLT_TEMPLATE_ID=1007248488345555325
 
-function generateOTP() {
-  return Math.floor(100000 + Math.random() * 900000);
-}
+// function generateOTP() {
+//   return Math.floor(100000 + Math.random() * 900000);
+// }
 
 async function sendSMS(to, otp) {
   const apiKey = process.env.SMSINDIAHUB_API_KEY;
