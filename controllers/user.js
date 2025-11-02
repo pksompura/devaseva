@@ -5,6 +5,8 @@ import axios from "axios";
 import Donation from "../models/donation.js";
 import LoginLog from "../models/userLoginLogs.js";
 import DeviceDetector from "device-detector-js";
+import dotenv from "dotenv";
+dotenv.config();
 
 const router = express.Router();
 
@@ -19,10 +21,10 @@ const isTokenBlacklisted = (req, res, next) => {
   next();
 };
 
-// Function to generate OTP
-function generateOTP() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
+// // Function to generate OTP
+// function generateOTP() {
+//   return Math.floor(100000 + Math.random() * 900000).toString();
+// }
 // Update user information
 export const updateUserInfo = async (req, res) => {
   const {
@@ -73,28 +75,91 @@ export const updateUserInfo = async (req, res) => {
   }
 };
 
-// Send OTP using SMSINDIAHUB API
-async function sendSMS(to, message) {
-  // const apiUrl = `http://cloud.smsindiahub.in/api/mt/SendSMS?APIKey=dfpVksGa6Em6a6UIefUbZQ&senderid=AREPLY&channel=Trans&DCS=0&flashsms=0&number=${to}&text=${message}&route=Transactional&PEId=1701158019630577568`;
-  const apiUrl = `http://cloud.smsindiahub.in/vendorsms/pushsms.aspx?APIKey=dfpVksGa6Em6a6UIefUbZQ&msisdn=${to}&sid=AREPLY&msg=Your One Time Password is ${message}. Thanks SMSINDIAHUB&fl=0&gwid=2&DCS=0`;
-  //  const params = {
-  //   user: 'pksompura',           // Replace with your SMSINDIAHUB username
-  //   password: 'Pksompura1#',       // Replace with your SMSINDIAHUB password
-  //   senderid: 'AREPLY',             // Replace with your approved SenderID
-  //   channel: 'Transactional',               // Use 'Trans' for transactional SMS
-  //   DCS: 0,
-  //   flashsms: 0,
-  //   number: to,                     // Mobile number of the user
-  //   text: message, // This should match the template text
-  //   DLTTemplateId: '1007248488345555325',  // Replace with the approved DLT Template ID
-  //   route: 'AREPLY',
-  //   PEId: '1701158019630577568'              // Replace with your Principal Entity ID
-  // };
+// // Send OTP using SMSINDIAHUB API
+// async function sendSMS(to, message) {
+//   // const apiUrl = `http://cloud.smsindiahub.in/api/mt/SendSMS?APIKey=dfpVksGa6Em6a6UIefUbZQ&senderid=AREPLY&channel=Trans&DCS=0&flashsms=0&number=${to}&text=${message}&route=Transactional&PEId=1701158019630577568`;
+//   const apiUrl = `http://cloud.smsindiahub.in/vendorsms/pushsms.aspx?APIKey=dfpVksGa6Em6a6UIefUbZQ&msisdn=${to}&sid=AREPLY&msg=Your One Time Password is ${message}. Thanks SMSINDIAHUB&fl=0&gwid=2&DCS=0`;
+//   //  const params = {
+//   //   user: 'pksompura',           // Replace with your SMSINDIAHUB username
+//   //   password: 'Pksompura1#',       // Replace with your SMSINDIAHUB password
+//   //   senderid: 'AREPLY',             // Replace with your approved SenderID
+//   //   channel: 'Transactional',               // Use 'Trans' for transactional SMS
+//   //   DCS: 0,
+//   //   flashsms: 0,
+//   //   number: to,                     // Mobile number of the user
+//   //   text: message, // This should match the template text
+//   //   DLTTemplateId: '1007248488345555325',  // Replace with the approved DLT Template ID
+//   //   route: 'AREPLY',
+//   //   PEId: '1701158019630577568'              // Replace with your Principal Entity ID
+//   // };
+//   try {
+//     const response = await axios.post(apiUrl);
+//     console.log("SMS sent:", response.data);
+//   } catch (error) {
+//     console.error("Error sending SMS:", error);
+//     throw new Error("Failed to send SMS");
+//   }
+// }
+
+// export const sendOTP = async (req, res) => {
+//   const { mobile_number } = req.body;
+//   if (!mobile_number) {
+//     return res.status(400).json({ error: "Mobile number is required" });
+//   }
+
+//   try {
+//     const otp = generateOTP();
+//     let user = await User.findOne({ mobile_number });
+//     if (user) {
+//       // If the user exists, update the OTP
+//       user.otp = otp;
+//       await user.save();
+//     } else {
+//       const newUser = new User({ mobile_number, otp });
+//       await newUser.save();
+//     }
+
+//     // Send OTP via SMS
+//     await sendSMS(`91${mobile_number}`, otp);
+//     return res.status(200).json({ message: "OTP sent successfully" });
+//   } catch (error) {
+//     // Log the full error to understand the cause
+//     console.error("Internal server error:", error.message);
+//     return res.status(500).json({ error: "Internal server error" });
+//   }
+// };
+
+// ✅ Move credentials to .env
+// SMSINDIAHUB_API_KEY=your_api_key
+// SMSINDIAHUB_SENDER_ID=AREPLY
+// SMSINDIAHUB_PEID=1701158019630577568
+// SMSINDIAHUB_DLT_TEMPLATE_ID=1007248488345555325
+
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000);
+}
+
+async function sendSMS(to, otp) {
+  const apiKey = process.env.SMSINDIAHUB_API_KEY;
+  const senderId = process.env.SMSINDIAHUB_SENDER_ID;
+  const peid = process.env.SMSINDIAHUB_PEID;
+  const templateId = process.env.SMSINDIAHUB_DLT_TEMPLATE_ID;
+
+  const message = `Your One Time Password is ${otp}. Thanks SMSINDIAHUB`;
+
+  // ✅ Use GET request — SMSIndiaHub API expects query string parameters
+  const apiUrl = `https://cloud.smsindiahub.in/vendorsms/pushsms.aspx?APIKey=${apiKey}&msisdn=${to}&sid=${senderId}&msg=${encodeURIComponent(
+    message
+  )}&fl=0&gwid=2&DCS=0&PEId=${peid}&DLTTemplateId=${templateId}`;
+
   try {
-    const response = await axios.post(apiUrl);
-    console.log("SMS sent:", response.data);
+    const response = await axios.get(apiUrl, { timeout: 10000 });
+    console.log("✅ SMS sent:", response.data);
   } catch (error) {
-    console.error("Error sending SMS:", error);
+    console.error(
+      "❌ Error sending SMS:",
+      error.response?.data || error.message
+    );
     throw new Error("Failed to send SMS");
   }
 }
@@ -108,21 +173,20 @@ export const sendOTP = async (req, res) => {
   try {
     const otp = generateOTP();
     let user = await User.findOne({ mobile_number });
+
     if (user) {
-      // If the user exists, update the OTP
       user.otp = otp;
       await user.save();
     } else {
-      const newUser = new User({ mobile_number, otp });
-      await newUser.save();
+      user = await User.create({ mobile_number, otp });
     }
 
-    // Send OTP via SMS
+    // ✅ Always prefix 91 for Indian numbers
     await sendSMS(`91${mobile_number}`, otp);
+
     return res.status(200).json({ message: "OTP sent successfully" });
   } catch (error) {
-    // Log the full error to understand the cause
-    console.error("Internal server error:", error.message);
+    console.error("💥 Internal server error:", error.message);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
