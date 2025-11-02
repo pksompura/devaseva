@@ -147,19 +147,22 @@ async function sendSMS(to, otp) {
 
   const message = `Your One Time Password is ${otp}. Thanks SMSINDIAHUB`;
 
-  // ✅ Use GET request — SMSIndiaHub API expects query string parameters
   const apiUrl = `https://cloud.smsindiahub.in/vendorsms/pushsms.aspx?APIKey=${apiKey}&msisdn=${to}&sid=${senderId}&msg=${encodeURIComponent(
     message
   )}&fl=0&gwid=2&DCS=0&PEId=${peid}&DLTTemplateId=${templateId}`;
 
+  console.log("📨 Sending SMS to:", to);
+  console.log("🔑 API URL:", apiUrl);
+
   try {
     const response = await axios.get(apiUrl, { timeout: 10000 });
-    console.log("✅ SMS sent:", response.data);
+    console.log("✅ SMS sent successfully:", response.data);
+    return response.data;
   } catch (error) {
-    console.error(
-      "❌ Error sending SMS:",
-      error.response?.data || error.message
-    );
+    console.error("❌ SMSIndiaHub Error Details:");
+    console.error("Message:", error.message);
+    console.error("Response:", error.response?.data);
+    console.error("Config:", error.config?.url);
     throw new Error("Failed to send SMS");
   }
 }
@@ -171,26 +174,31 @@ export const sendOTP = async (req, res) => {
   }
 
   try {
+    console.log("📱 sendOTP triggered for:", mobile_number);
     const otp = generateOTP();
-    let user = await User.findOne({ mobile_number });
+    console.log("🔢 Generated OTP:", otp);
 
+    let user = await User.findOne({ mobile_number });
     if (user) {
+      console.log("👤 Existing user found, updating OTP...");
       user.otp = otp;
       await user.save();
     } else {
+      console.log("🆕 New user, creating record...");
       user = await User.create({ mobile_number, otp });
     }
 
-    // ✅ Always prefix 91 for Indian numbers
+    console.log("🚀 Sending SMS...");
     await sendSMS(`91${mobile_number}`, otp);
 
+    console.log("✅ OTP flow complete for", mobile_number);
     return res.status(200).json({ message: "OTP sent successfully" });
   } catch (error) {
-    console.error("💥 Internal server error:", error.message);
+    console.error("💥 Internal server error in sendOTP:", error.message);
+    console.error(error.stack);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
-
 // Verify OTP
 // export const verifyOTP = async (req, res) => {
 //   const { mobile_number, otp } = req.body;
